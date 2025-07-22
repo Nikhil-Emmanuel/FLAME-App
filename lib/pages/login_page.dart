@@ -46,11 +46,11 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("Login",
+                  const Text("Login",
                       style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: const Color.fromARGB(255, 75, 192, 21))),
+                          color: Color.fromARGB(255, 75, 192, 21))),
                   const SizedBox(height: 20),
                   TextField(
                     controller: _userController,

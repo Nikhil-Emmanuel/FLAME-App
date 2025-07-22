@@ -5,10 +5,10 @@ class DayMinMaxPage extends StatefulWidget {
   const DayMinMaxPage({super.key});
 
   @override
-  State<DayMinMaxPage> createState() => _DayMinMaxPageState();
+  State<DayMinMaxPage> createState() => _GunStatsChartState();
 }
 
-class _DayMinMaxPageState extends State<DayMinMaxPage> {
+class _GunStatsChartState extends State<DayMinMaxPage> {
   String selectedGun = 'G1';
 
   final Map<String, Map<String, double>> gunData = {
@@ -17,42 +17,15 @@ class _DayMinMaxPageState extends State<DayMinMaxPage> {
     'G3': {'minFlow': 12, 'maxFlow': 16, 'minTemp': 32, 'maxTemp': 38},
   };
 
-  double safeValue(double? val) {
-    if (val == null || val.isNaN || val.isInfinite || val <= 0) {
-      return 0.1;
-    }
-    return val;
-  }
-
-  bool isAllZero(List<double> values) {
-    return values.every((val) => val <= 0.1);
-  }
-
-  Color getStatusColor(String type, double value) {
-    if (type == 'flow') {
-      if (value < 9) return Colors.red;
-      if (value < 12) return Colors.yellow;
-      return Colors.green;
-    } else {
-      if (value > 45) return Colors.red;
-      if (value > 40) return Colors.yellow;
-      return Colors.green;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final data = gunData[selectedGun] ?? {};
-
-    final minFlow = safeValue(data['minFlow']);
-    final maxFlow = safeValue(data['maxFlow']);
-    final minTemp = safeValue(data['minTemp']);
-    final maxTemp = safeValue(data['maxTemp']);
-
-    final allValues = [minFlow, maxFlow, minTemp, maxTemp];
-    final showChart = !isAllZero(allValues);
+    final data = gunData[selectedGun]!;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Gun Stats"),
+        backgroundColor: Colors.blue.shade900,
+      ),
       backgroundColor: Colors.blue.shade900,
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -69,93 +42,96 @@ class _DayMinMaxPageState extends State<DayMinMaxPage> {
               items: gunData.keys.map((gun) {
                 return DropdownMenuItem(
                   value: gun,
-                  child: Text(gun),
+                  child: Text(
+                    gun,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 );
               }).toList(),
             ),
             const SizedBox(height: 20),
             Text(
-              "Min & Max Flow/Temperature for $selectedGun",
+              "Max & Min Flow and Temp for $selectedGun",
               style: const TextStyle(fontSize: 18, color: Colors.white),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
-            /// ✅ Chart Section
-            showChart
-                ? BarChart(
-                    BarChartData(
-                      barGroups: [
-                        BarChartGroupData(x: 0, barRods: [
-                          BarChartRodData(
-                            toY: minFlow,
-                            color: getStatusColor('flow', minFlow),
-                            width: 18,
-                          ),
-                          BarChartRodData(
-                            toY: maxFlow,
-                            color: getStatusColor('flow', maxFlow),
-                            width: 18,
-                          ),
-                        ]),
-                        BarChartGroupData(x: 1, barRods: [
-                          BarChartRodData(
-                            toY: minTemp,
-                            color: getStatusColor('temp', minTemp),
-                            width: 18,
-                          ),
-                          BarChartRodData(
-                            toY: maxTemp,
-                            color: getStatusColor('temp', maxTemp),
-                            width: 18,
-                          ),
-                        ]),
+            /// 🚫 Infinite size fix with SizedBox constraint
+            SizedBox(
+              height: 300,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  barGroups: [
+                    BarChartGroupData(
+                      x: 0,
+                      barRods: [
+                        BarChartRodData(
+                          toY: data['minFlow']!,
+                          color: Colors.teal,
+                          width: 15,
+                        ),
+                        BarChartRodData(
+                          toY: data['maxFlow']!,
+                          color: Colors.orange,
+                          width: 15,
+                        ),
                       ],
-                      titlesData: FlTitlesData(
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, _) {
-                              switch (value.toInt()) {
-                                case 0:
-                                  return const Text('Flow',
-                                      style: TextStyle(color: Colors.white));
-                                case 1:
-                                  return const Text('Temp',
-                                      style: TextStyle(color: Colors.white));
-                                default:
-                                  return const SizedBox.shrink();
-                              }
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, _) {
-                              return Text(
-                                value.toString(),
-                                style: const TextStyle(color: Colors.white),
-                              );
-                            },
-                          ),
-                        ),
-                        topTitles:
-                            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles:
-                            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      gridData: const FlGridData(show: false),
-                      borderData: FlBorderData(show: false),
+                      barsSpace: 4,
                     ),
-                  )
-                : const Text(
-                    "No valid data available to display the chart.",
-                    style: TextStyle(color: Colors.white),
+                    BarChartGroupData(
+                      x: 1,
+                      barRods: [
+                        BarChartRodData(
+                          toY: data['minTemp']!,
+                          color: Colors.blue,
+                          width: 15,
+                        ),
+                        BarChartRodData(
+                          toY: data['maxTemp']!,
+                          color: Colors.redAccent,
+                          width: 15,
+                        ),
+                      ],
+                      barsSpace: 4,
+                    ),
+                  ],
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, _) {
+                          switch (value.toInt()) {
+                            case 0:
+                              return const Text("Flow",
+                                  style: TextStyle(color: Colors.white));
+                            case 1:
+                              return const Text("Temp",
+                                  style: TextStyle(color: Colors.white));
+                            default:
+                              return const SizedBox.shrink();
+                          }
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, _) => Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    topTitles:
+                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles:
+                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-            const Spacer(),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Back to Home", style: TextStyle(color: Colors.white)),
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                ),
+              ),
             ),
           ],
         ),

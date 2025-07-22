@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:excel/excel.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class GunStatusPage extends StatefulWidget {
   const GunStatusPage({super.key});
@@ -23,6 +26,31 @@ class _GunStatusPageState extends State<GunStatusPage> {
         'temp': '--',
       });
     });
+  }
+
+  Future<void> _downloadReport() async {
+    var excel = Excel.createExcel();
+    Sheet sheet = excel['Gun Status'];
+
+    // Add header row
+    sheet.appendRow(['Gun', 'Flow', 'Temperature']);
+
+    // Add data rows
+    for (var gun in gunData) {
+      sheet.appendRow([gun['name'], gun['flow'], gun['temp']]);
+    }
+
+    // Save file
+    final dir = await getExternalStorageDirectory();
+    String path = '${dir!.path}/gun_status_report.xlsx';
+    File(path)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(excel.encode()!);
+
+    // Feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Report downloaded to: $path')),
+    );
   }
 
   @override
@@ -50,15 +78,21 @@ class _GunStatusPageState extends State<GunStatusPage> {
                   children: const [
                     Padding(
                       padding: EdgeInsets.all(10),
-                      child: Text('Gun', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text('Gun',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                     Padding(
                       padding: EdgeInsets.all(10),
-                      child: Text('Flow', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text('Flow',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                     Padding(
                       padding: EdgeInsets.all(10),
-                      child: Text('Temperature', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text('Temperature',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -67,15 +101,18 @@ class _GunStatusPageState extends State<GunStatusPage> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(10),
-                        child: Text(gun['name'], style: const TextStyle(color: Colors.white)),
+                        child:
+                            Text(gun['name'], style: const TextStyle(color: Colors.white)),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(10),
-                        child: Text(gun['flow'], style: const TextStyle(color: Colors.white)),
+                        child:
+                            Text(gun['flow'], style: const TextStyle(color: Colors.white)),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(10),
-                        child: Text(gun['temp'], style: const TextStyle(color: Colors.white)),
+                        child:
+                            Text(gun['temp'], style: const TextStyle(color: Colors.white)),
                       ),
                     ],
                   );
@@ -87,6 +124,12 @@ class _GunStatusPageState extends State<GunStatusPage> {
               onPressed: _addGun,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
               child: const Text('Add Gun', style: TextStyle(color: Colors.blue)),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _downloadReport,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+              child: const Text('Download Report', style: TextStyle(color: Colors.blue)),
             ),
           ],
         ),
