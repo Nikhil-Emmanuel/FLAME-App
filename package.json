@@ -1,0 +1,28 @@
+{
+  "name": "flame-plc-api-server",
+  "version": "1.0.0",
+  "description": "FLAME PLC Data API Server with WebSocket support",
+  "main": "enhanced_plc_server.js",
+  "scripts": {
+    "start": "node enhanced_plc_server.js",
+    "dev": "nodemon enhanced_plc_server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "ethernet-ip": "^1.2.5",
+    "express": "^4.21.2",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "plc",
+    "api",
+    "websocket",
+    "industrial",
+    "monitoring"
+  ],
+  "author": "FLAME Team",
+  "license": "MIT"
+}

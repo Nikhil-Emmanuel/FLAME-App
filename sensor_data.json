@@ -1,0 +1,32 @@
+[
+  {
+    "gunIndex": 1,
+    "timestamp": "2025-08-29 21:54:42 +05:30",
+    "flowRate": 6,
+    "temperature": 35.2
+  },
+  {
+    "gunIndex": 2,
+    "timestamp": "2025-08-29 21:54:42 +05:30",
+    "flowRate": 5.3,
+    "temperature": 36.1
+  },
+  {
+    "gunIndex": 3,
+    "timestamp": "2025-08-29 21:54:42 +05:30",
+    "flowRate": 9.7,
+    "temperature": 38.6
+  },
+  {
+    "gunIndex": 4,
+    "timestamp": "2025-08-29 21:54:42 +05:30",
+    "flowRate": 9.8,
+    "temperature": 44.4
+  },
+  {
+    "gunIndex": 5,
+    "timestamp": "2025-08-29 21:54:42 +05:30",
+    "flowRate": 11.5,
+    "temperature": 40
+  }
+]

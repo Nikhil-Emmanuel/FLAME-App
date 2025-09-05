@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:excel/excel.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'dart:async';
+import '../services/api_service.dart';
+import '../models/gun_data.dart';
 
 class GunStatusPage extends StatefulWidget {
   const GunStatusPage({super.key});
@@ -11,47 +11,76 @@ class GunStatusPage extends StatefulWidget {
 }
 
 class _GunStatusPageState extends State<GunStatusPage> {
-  List<Map<String, dynamic>> gunData = [
-    {'name': 'G1', 'flow': '--', 'temp': '--'},
-    {'name': 'G2', 'flow': '--', 'temp': '--'},
-    {'name': 'G3', 'flow': '--', 'temp': '--'},
-  ];
+  List<GunData> gunData = [];
+  bool isLoading = true;
+  String? errorMessage;
+  StreamSubscription<List<GunData>>? _dataSubscription;
 
-  void _addGun() {
-    setState(() {
-      int newGunNumber = gunData.length + 1;
-      gunData.add({
-        'name': 'G$newGunNumber',
-        'flow': '--',
-        'temp': '--',
-      });
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+    _subscribeToRealTimeData();
   }
 
-  Future<void> _downloadReport() async {
-    var excel = Excel.createExcel();
-    Sheet sheet = excel['Gun Status'];
+  @override
+  void dispose() {
+    _dataSubscription?.cancel();
+    super.dispose();
+  }
 
-    // Add header row
-    sheet.appendRow(['Gun', 'Flow', 'Temperature']);
+  Future<void> _loadInitialData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
 
-    // Add data rows
-    for (var gun in gunData) {
-      sheet.appendRow([gun['name'], gun['flow'], gun['temp']]);
+    try {
+      final response = await ApiService.instance.getAllGuns();
+      setState(() {
+        if (response.success && response.data != null) {
+          gunData = response.data!;
+          errorMessage = null;
+        } else {
+          gunData = ApiService.instance.cachedGunData;
+          errorMessage = response.error;
+        }
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        gunData = ApiService.instance.cachedGunData;
+        errorMessage = 'Failed to load data: $e';
+        isLoading = false;
+      });
     }
+  }
 
-    // Save file
-    final dir = await getExternalStorageDirectory();
-    String path = '${dir!.path}/gun_status_report.xlsx';
-    File(path)
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(excel.encode()!);
-
-    // Feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Report downloaded to: $path')),
+  void _subscribeToRealTimeData() {
+    _dataSubscription = ApiService.instance.gunDataStream.listen(
+      (data) {
+        if (mounted) {
+          setState(() {
+            gunData = data;
+            errorMessage = null;
+          });
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            errorMessage = 'Real-time connection error: $error';
+          });
+        }
+      },
     );
   }
+
+  Future<void> _refreshData() async {
+    await _loadInitialData();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -60,78 +89,142 @@ class _GunStatusPageState extends State<GunStatusPage> {
       appBar: AppBar(
         backgroundColor: Colors.blue.shade800,
         title: const Text('Gun Status'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshData,
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Table(
-              border: TableBorder.all(color: Colors.white),
-              columnWidths: const {
-                0: FlexColumnWidth(2),
-                1: FlexColumnWidth(2),
-                2: FlexColumnWidth(2),
-              },
-              children: [
-                TableRow(
-                  decoration: BoxDecoration(color: Colors.blue.shade800),
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Text('Gun',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold)),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+            // Connection status indicator
+            if (errorMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: ApiService.instance.isConnected ? Colors.orange : Colors.red,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      ApiService.instance.isConnected ? Icons.warning : Icons.offline_bolt,
+                      color: Colors.white,
+                      size: 16,
                     ),
-                    Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Text('Flow',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Text('Temperature',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        ApiService.instance.isConnected
+                          ? 'Using cached data'
+                          : 'Offline - Using cached data',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
-                ...gunData.map((gun) {
-                  return TableRow(
+              ),
+
+            // Loading indicator
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            else
+              Table(
+                    border: TableBorder.all(color: Colors.white),
+                    columnWidths: const {
+                      0: FlexColumnWidth(2),
+                      1: FlexColumnWidth(3),
+                      2: FlexColumnWidth(3),
+                      3: FlexColumnWidth(2),
+                    },
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(10),
-                        child:
-                            Text(gun['name'], style: const TextStyle(color: Colors.white)),
+                      TableRow(
+                        decoration: BoxDecoration(color: Colors.blue.shade800),
+                        children: const [
+                          Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Text('Gun',
+                                style: TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Text('Flow (L/min)',
+                                style: TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Text('Temperature (°C)',
+                                style: TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Text('Status',
+                                style: TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(10),
-                        child:
-                            Text(gun['flow'], style: const TextStyle(color: Colors.white)),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(10),
-                        child:
-                            Text(gun['temp'], style: const TextStyle(color: Colors.white)),
-                      ),
+                      ...gunData.map((gun) {
+                        Color statusColor = gun.healthStatus == 'Good'
+                          ? Colors.green
+                          : gun.healthStatus == 'Maintenance Needed'
+                            ? Colors.orange
+                            : Colors.red;
+
+                        return TableRow(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(gun.gunName,
+                                  style: const TextStyle(color: Colors.white)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(gun.flowDisplay,
+                                  style: const TextStyle(color: Colors.white)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(gun.tempDisplay,
+                                  style: const TextStyle(color: Colors.white)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(gun.healthStatus,
+                                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        );
+                      }),
                     ],
-                  );
-                }),
-              ],
-            ),
+                  ),
+
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _addGun,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-              child: const Text('Add Gun', style: TextStyle(color: Colors.blue)),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _refreshData,
+                icon: const Icon(Icons.refresh, color: Colors.blue),
+                label: const Text('Refresh Data', style: TextStyle(color: Colors.blue)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _downloadReport,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-              child: const Text('Download Report', style: TextStyle(color: Colors.blue)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
