@@ -1,7 +1,5 @@
 name: flame
-description: A Flutter project.
-
-publish_to: 'none' # Remove this line if publishing
+description: F.L.A.M.E - Factory Line Alert Monitoring & Equipment tracking system for industrial gun equipment monitoring.
 
 version: 1.0.0+1
 

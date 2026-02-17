@@ -1,32 +1,31 @@
 [
   {
     "gunIndex": 1,
-    "timestamp": "2025-08-29 21:54:42 +05:30",
-    "flowRate": 6,
-    "temperature": 35.2
+    "timestamp": "2026-02-17 21:30:18 +05:30",
+    "flowRate": 11.3,
+    "temperature": 43.9
   },
   {
     "gunIndex": 2,
-    "timestamp": "2025-08-29 21:54:42 +05:30",
-    "flowRate": 5.3,
-    "temperature": 36.1
+    "timestamp": "2026-02-17 21:30:18 +05:30",
+    "flowRate": 6.3,
+    "temperature": 36.4
   },
   {
     "gunIndex": 3,
-    "timestamp": "2025-08-29 21:54:42 +05:30",
-    "flowRate": 9.7,
-    "temperature": 38.6
+    "timestamp": "2026-02-17 21:30:18 +05:30",
+    "flowRate": 11.5,
+    "temperature": 36
   },
   {
     "gunIndex": 4,
-    "timestamp": "2025-08-29 21:54:42 +05:30",
-    "flowRate": 9.8,
-    "temperature": 44.4
+    "timestamp": "2026-02-17 21:30:18 +05:30",
+    "flowRate": 9.2,
+    "temperature": 44.7
   },
   {
     "gunIndex": 5,
-    "timestamp": "2025-08-29 21:54:42 +05:30",
-    "flowRate": 11.5,
-    "temperature": 40
+    "timestamp": "2026-02-17 21:30:18 +05:30",
+    "flowRate": 5.8,
+    "temperature": 43.8
   }
-]

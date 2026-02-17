@@ -8,6 +8,7 @@ const WebSocket = require('ws');
 
 const CONFIG_FILE = path.join(__dirname, 'settings.json');
 const OUTPUT_FILE = path.join(__dirname, 'sensor_data.json');
+const WELD_COUNT_FILE = path.join(__dirname, 'weld_count_data.json');
 
 // API Configuration
 const API_PORT = 7575;
@@ -63,13 +64,20 @@ function getISTTimestamp() {
 
 // Thread-safe data storage with mutex-like behavior
 let latestSensorData = [];
+let latestWeldCountData = { last_update: '', counts: {} };
 let isWritingData = false;
+let isWritingWeldData = false;
 let connectedClients = new Set();
 
 // Thread-safe data access
 function getSensorDataSafely() {
   // Return a deep copy to prevent race conditions
   return JSON.parse(JSON.stringify(latestSensorData));
+}
+
+function getWeldCountDataSafely() {
+  // Return a deep copy to prevent race conditions
+  return JSON.parse(JSON.stringify(latestWeldCountData));
 }
 
 // Thread-safe data update
@@ -86,6 +94,22 @@ async function updateSensorDataSafely(newData) {
     broadcastToClients(latestSensorData);
   } finally {
     isWritingData = false;
+  }
+}
+
+async function updateWeldCountDataSafely(newData) {
+  // Wait if currently writing
+  while (isWritingWeldData) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+
+  isWritingWeldData = true;
+  try {
+    latestWeldCountData = [...newData];
+    await saveWeldCountToFileAsync(latestWeldCountData);
+    broadcastWeldCountToClients(latestWeldCountData);
+  } finally {
+    isWritingWeldData = false;
   }
 }
 
@@ -176,24 +200,86 @@ app.get('/api/alerts', authenticateAPI, (req, res) => {
   });
 });
 
+// Get all weld count data
+app.get('/api/weld-counts', authenticateAPI, (req, res) => {
+  const safeData = getWeldCountDataSafely();
+
+  // Convert to array format for Flutter app
+  const weldArray = Object.keys(safeData.counts || {}).map((gunName, index) => ({
+    gunIndex: index + 1,
+    gunName: gunName,
+    weldCount: safeData.counts[gunName],
+    lastUpdated: safeData.last_update
+  }));
+
+  res.json({
+    success: true,
+    timestamp: safeData.last_update || getISTTimestamp(),
+    totalGuns: Object.keys(safeData.counts || {}).length,
+    data: weldArray
+  });
+});
+
+// Get specific gun weld count by name
+app.get('/api/weld-counts/:gunName', authenticateAPI, (req, res) => {
+  const gunName = req.params.gunName;
+  const safeData = getWeldCountDataSafely();
+
+  if (!safeData.counts || !(gunName in safeData.counts)) {
+    return res.status(404).json({
+      success: false,
+      error: 'Gun not found',
+      gunName: gunName
+    });
+  }
+
+  res.json({
+    success: true,
+    timestamp: safeData.last_update || getISTTimestamp(),
+    data: {
+      gunName: gunName,
+      weldCount: safeData.counts[gunName],
+      lastUpdated: safeData.last_update
+    }
+  });
+});
+
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
   console.log('📱 New WebSocket client connected');
   connectedClients.add(ws);
 
-  // Send current data immediately
+  // Send current sensor data immediately
   const safeData = getSensorDataSafely();
   ws.send(JSON.stringify({
     type: 'initial_data',
     timestamp: getISTTimestamp(),
     data: safeData
   }));
-  
+
+  // Send current weld count data immediately
+  const safeWeldData = getWeldCountDataSafely();
+  if (safeWeldData.counts && Object.keys(safeWeldData.counts).length > 0) {
+    // Convert to array format for Flutter app
+    const weldArray = Object.keys(safeWeldData.counts).map((gunName, index) => ({
+      gunIndex: index + 1,
+      gunName: gunName,
+      weldCount: safeWeldData.counts[gunName],
+      lastUpdated: safeWeldData.last_update
+    }));
+
+    ws.send(JSON.stringify({
+      type: 'weld_count_update',
+      timestamp: safeWeldData.last_update || getISTTimestamp(),
+      data: weldArray
+    }));
+  }
+
   ws.on('close', () => {
     console.log('📱 WebSocket client disconnected');
     connectedClients.delete(ws);
   });
-  
+
   ws.on('error', (error) => {
     console.error('WebSocket error:', error);
     connectedClients.delete(ws);
@@ -207,10 +293,37 @@ function broadcastToClients(data) {
     timestamp: getISTTimestamp(),
     data: data
   });
-  
+
   connectedClients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(message);
+    }
+  });
+}
+
+function broadcastWeldCountToClients(data) {
+  // Convert to array format for Flutter app
+  const weldArray = Object.keys(data.counts || {}).map((gunName, index) => ({
+    gunIndex: index + 1,
+    gunName: gunName,
+    weldCount: data.counts[gunName],
+    lastUpdated: data.last_update
+  }));
+
+  const message = JSON.stringify({
+    type: 'weld_count_update',
+    timestamp: data.last_update || getISTTimestamp(),
+    data: weldArray
+  });
+
+  connectedClients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(message);
+      } catch (error) {
+        console.error('Error broadcasting weld count to client:', error);
+        connectedClients.delete(client);
+      }
     }
   });
 }
@@ -271,12 +384,64 @@ function saveDataToFileAsync(data) {
   });
 }
 
+function saveWeldCountToFileAsync(data) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(WELD_COUNT_FILE, JSON.stringify(data, null, 2), (err) => {
+      if (err) {
+        console.error("❌ Failed to write weld count data to file:", err.message || err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Function to load weld count data from file (for desktop app integration)
+async function loadWeldCountFromFile() {
+  try {
+    if (fs.existsSync(WELD_COUNT_FILE)) {
+      const data = fs.readFileSync(WELD_COUNT_FILE, 'utf-8');
+      const weldData = JSON.parse(data);
+      await updateWeldCountDataSafely(weldData);
+      console.log(`✅ Loaded weld count data for ${weldData.length} guns`);
+    } else {
+      console.log('ℹ️ No existing weld count data file found');
+    }
+  } catch (err) {
+    console.error('❌ Failed to load weld count data:', err.message || err);
+  }
+}
+
+// Watch for changes to weld count file (for desktop app updates)
+function watchWeldCountFile() {
+  fs.watch(WELD_COUNT_FILE, async (eventType, filename) => {
+    if (eventType === 'change') {
+      try {
+        const data = fs.readFileSync(WELD_COUNT_FILE, 'utf-8');
+        const weldData = JSON.parse(data);
+        await updateWeldCountDataSafely(weldData);
+        console.log('🔄 Weld count data updated from file');
+      } catch (err) {
+        console.error('❌ Failed to reload weld count data:', err.message || err);
+      }
+    }
+  });
+  console.log('👁️ Watching weld count file for changes');
+}
+
 // Start the API server
-server.listen(API_PORT, () => {
+server.listen(API_PORT, '0.0.0.0', async () => {
   console.log(`🚀 FLAME API Server running on port ${API_PORT}`);
   console.log(`📡 WebSocket endpoint: ws://localhost:${API_PORT}`);
   console.log(`🔑 API Key: ${API_KEY}`);
   console.log(`📊 Monitoring ${TOTAL_SENSORS} guns`);
+
+  // Load initial weld count data
+  await loadWeldCountFromFile();
+
+  // Watch for weld count file changes
+  watchWeldCountFile();
 });
 
 // Start PLC polling

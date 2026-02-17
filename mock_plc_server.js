@@ -7,6 +7,7 @@ const WebSocket = require('ws');
 
 const CONFIG_FILE = path.join(__dirname, 'settings.json');
 const OUTPUT_FILE = path.join(__dirname, 'sensor_data.json');
+const WELD_COUNT_FILE = path.join(__dirname, 'weld_count_data.json');
 
 // API Configuration
 const API_PORT = 7575;
@@ -49,7 +50,9 @@ function getISTTimestamp() {
 
 // Thread-safe data storage with mutex-like behavior
 let latestSensorData = [];
+let latestWeldCountData = { last_update: '', counts: {} };
 let isWritingData = false;
+let isWritingWeldData = false;
 let connectedClients = new Set();
 
 // Generate random value within range
@@ -64,13 +67,18 @@ function getSensorDataSafely() {
   return JSON.parse(JSON.stringify(latestSensorData));
 }
 
+function getWeldCountDataSafely() {
+  // Return a deep copy to prevent race conditions
+  return JSON.parse(JSON.stringify(latestWeldCountData));
+}
+
 // Thread-safe data update
 async function updateSensorDataSafely(newData) {
   // Wait if currently writing
   while (isWritingData) {
     await new Promise(resolve => setTimeout(resolve, 10));
   }
-  
+
   isWritingData = true;
   try {
     latestSensorData = [...newData];
@@ -78,6 +86,22 @@ async function updateSensorDataSafely(newData) {
     broadcastToClients(latestSensorData);
   } finally {
     isWritingData = false;
+  }
+}
+
+async function updateWeldCountDataSafely(newData) {
+  // Wait if currently writing
+  while (isWritingWeldData) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+
+  isWritingWeldData = true;
+  try {
+    latestWeldCountData = {...newData};
+    await saveWeldCountToFileAsync(latestWeldCountData);
+    broadcastWeldCountToClients(latestWeldCountData);
+  } finally {
+    isWritingWeldData = false;
   }
 }
 
@@ -156,7 +180,7 @@ app.get('/api/alerts', authenticateAPI, (req, res) => {
     const lowFlow = gun.flowRate < 8.0;
     return highTemp || lowFlow;
   });
-  
+
   res.json({
     success: true,
     timestamp: getISTTimestamp(),
@@ -169,24 +193,86 @@ app.get('/api/alerts', authenticateAPI, (req, res) => {
   });
 });
 
+// Get all weld count data
+app.get('/api/weld-counts', authenticateAPI, (req, res) => {
+  const safeData = getWeldCountDataSafely();
+
+  // Convert to array format for Flutter app
+  const weldArray = Object.keys(safeData.counts || {}).map((gunName, index) => ({
+    gunIndex: index + 1,
+    gunName: gunName,
+    weldCount: safeData.counts[gunName],
+    lastUpdated: safeData.last_update
+  }));
+
+  res.json({
+    success: true,
+    timestamp: safeData.last_update || getISTTimestamp(),
+    totalGuns: Object.keys(safeData.counts || {}).length,
+    data: weldArray
+  });
+});
+
+// Get specific gun weld count by name
+app.get('/api/weld-counts/:gunName', authenticateAPI, (req, res) => {
+  const gunName = req.params.gunName;
+  const safeData = getWeldCountDataSafely();
+
+  if (!safeData.counts || !(gunName in safeData.counts)) {
+    return res.status(404).json({
+      success: false,
+      error: 'Gun not found',
+      gunName: gunName
+    });
+  }
+
+  res.json({
+    success: true,
+    timestamp: safeData.last_update || getISTTimestamp(),
+    data: {
+      gunName: gunName,
+      weldCount: safeData.counts[gunName],
+      lastUpdated: safeData.last_update
+    }
+  });
+});
+
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
   console.log('📱 New WebSocket client connected');
   connectedClients.add(ws);
-  
-  // Send current data immediately
+
+  // Send current sensor data immediately
   const safeData = getSensorDataSafely();
   ws.send(JSON.stringify({
     type: 'initial_data',
     timestamp: getISTTimestamp(),
     data: safeData
   }));
-  
+
+  // Send current weld count data immediately
+  const safeWeldData = getWeldCountDataSafely();
+  if (safeWeldData.counts && Object.keys(safeWeldData.counts).length > 0) {
+    // Convert to array format for Flutter app
+    const weldArray = Object.keys(safeWeldData.counts).map((gunName, index) => ({
+      gunIndex: index + 1,
+      gunName: gunName,
+      weldCount: safeWeldData.counts[gunName],
+      lastUpdated: safeWeldData.last_update
+    }));
+
+    ws.send(JSON.stringify({
+      type: 'weld_count_update',
+      timestamp: safeWeldData.last_update || getISTTimestamp(),
+      data: weldArray
+    }));
+  }
+
   ws.on('close', () => {
     console.log('📱 WebSocket client disconnected');
     connectedClients.delete(ws);
   });
-  
+
   ws.on('error', (error) => {
     console.error('WebSocket error:', error);
     connectedClients.delete(ws);
@@ -200,13 +286,40 @@ function broadcastToClients(data) {
     timestamp: getISTTimestamp(),
     data: data
   });
-  
+
   connectedClients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       try {
         client.send(message);
       } catch (error) {
         console.error('Error broadcasting to client:', error);
+        connectedClients.delete(client);
+      }
+    }
+  });
+}
+
+function broadcastWeldCountToClients(data) {
+  // Convert to array format for Flutter app
+  const weldArray = Object.keys(data.counts || {}).map((gunName, index) => ({
+    gunIndex: index + 1,
+    gunName: gunName,
+    weldCount: data.counts[gunName],
+    lastUpdated: data.last_update
+  }));
+
+  const message = JSON.stringify({
+    type: 'weld_count_update',
+    timestamp: data.last_update || getISTTimestamp(),
+    data: weldArray
+  });
+
+  connectedClients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(message);
+      } catch (error) {
+        console.error('Error broadcasting weld count to client:', error);
         connectedClients.delete(client);
       }
     }
@@ -270,14 +383,73 @@ function saveDataToFileAsync(data) {
   });
 }
 
+function saveWeldCountToFileAsync(data) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(WELD_COUNT_FILE, JSON.stringify(data, null, 2), (err) => {
+      if (err) {
+        console.error("❌ Failed to write weld count data to file:", err.message || err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Mock weld count data generation
+async function generateMockWeldCountData() {
+  console.log(`✅ Starting Mock Weld Count Generation`);
+
+  // Initialize weld counts with realistic gun names
+  const gunNames = [
+    'MB20_Gun1_LH', 'MB20_Gun3_LH', 'MB20_Gun3_RH', 'MB20_Gun2_RH', 'MB20_Gun3_RH_2', 'MB20_Gun4_RH',
+    'MB30_Gun1_LH', 'MB30_Gun2_LH', 'MB30_Gun3_LH', 'MB30_Gun1_RH', 'MB30_Gun2_RH', 'MB30_Gun3_RH',
+    'MB40_Gun1_LH', 'MB40_Gun2_LH', 'MB40_Gun3_LH', 'MB40_Gun1_RH', 'MB40_Gun2_RH',
+    'MB50_Gun1_LH', 'MB50_Gun2_LH',
+    'MB60_Gun1_RH', 'MB60_Gun2_RH', 'MB60_Gun3_RH', 'MB60_Gun3_LH', 'MB60_Gun1_LH', 'MB60_Gun2_LH',
+    'I193.6', 'I193.7'
+  ];
+
+  const counts = {};
+  gunNames.forEach(gunName => {
+    counts[gunName] = Math.floor(Math.random() * 100); // Start with random count 0-100
+  });
+
+  const weldData = {
+    last_update: getISTTimestamp(),
+    counts: counts
+  };
+
+  await updateWeldCountDataSafely(weldData);
+
+  // Update weld counts periodically (every 5 seconds)
+  setInterval(async () => {
+    const updatedCounts = {};
+    Object.keys(latestWeldCountData.counts || {}).forEach(gunName => {
+      // Randomly increment weld count (0-3 welds per interval)
+      const increment = Math.floor(Math.random() * 4);
+      updatedCounts[gunName] = (latestWeldCountData.counts[gunName] || 0) + increment;
+    });
+
+    const updatedData = {
+      last_update: getISTTimestamp(),
+      counts: updatedCounts
+    };
+
+    await updateWeldCountDataSafely(updatedData);
+  }, 5000); // Update every 5 seconds
+}
+
 // Start the API server
-server.listen(API_PORT, () => {
+server.listen(API_PORT, '0.0.0.0', () => {
   console.log(`🚀 FLAME Mock API Server running on port ${API_PORT}`);
   console.log(`📡 WebSocket endpoint: ws://localhost:${API_PORT}`);
   console.log(`🔑 API Key: ${API_KEY}`);
   console.log(`📊 Monitoring ${TOTAL_SENSORS} guns (MOCK MODE)`);
   console.log(`🎲 Generating random data every ${POLL_INTERVAL}ms`);
+  console.log(`🔧 Generating weld count data every 5000ms`);
 });
 
 // Start mock data generation
 generateMockPLCData();
+generateMockWeldCountData();

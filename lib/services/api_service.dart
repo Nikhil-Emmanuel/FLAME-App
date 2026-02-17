@@ -5,6 +5,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/gun_data.dart';
+import '../models/weld_count_data.dart';
 import '../config/api_config.dart';
 import 'settings_service.dart';
 import 'min_max_service.dart';
@@ -19,21 +20,25 @@ class ApiService {
   WebSocketChannel? _channel;
   StreamController<List<GunData>>? _dataStreamController;
   StreamController<List<AlertData>>? _alertStreamController;
+  StreamController<List<WeldCountData>>? _weldCountStreamController;
   Timer? _reconnectTimer;
   Timer? _pollTimer;
   bool _isConnected = false;
-  
+
   // Cached data for offline mode
   List<GunData> _cachedGunData = [];
   List<AlertData> _cachedAlerts = [];
-  
+  List<WeldCountData> _cachedWeldCounts = [];
+
   // Getters for streams
   Stream<List<GunData>> get gunDataStream => _dataStreamController?.stream ?? const Stream.empty();
   Stream<List<AlertData>> get alertStream => _alertStreamController?.stream ?? const Stream.empty();
-  
+  Stream<List<WeldCountData>> get weldCountStream => _weldCountStreamController?.stream ?? const Stream.empty();
+
   bool get isConnected => _isConnected;
   List<GunData> get cachedGunData => _cachedGunData;
   List<AlertData> get cachedAlerts => _cachedAlerts;
+  List<WeldCountData> get cachedWeldCounts => _cachedWeldCounts;
 
   // Initialize the service
   Future<void> initialize() async {
@@ -45,6 +50,7 @@ class ApiService {
 
     _dataStreamController = StreamController<List<GunData>>.broadcast();
     _alertStreamController = StreamController<List<AlertData>>.broadcast();
+    _weldCountStreamController = StreamController<List<WeldCountData>>.broadcast();
 
     // Load cached data
     await _loadCachedData();
@@ -69,7 +75,7 @@ class ApiService {
   Future<bool> _hasNetworkConnection() async {
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      return connectivityResult != ConnectivityResult.none;
+      return !connectivityResult.contains(ConnectivityResult.none) && connectivityResult.isNotEmpty;
     } catch (e) {
       return false;
     }
@@ -180,6 +186,101 @@ class ApiService {
     }
   }
 
+  // Get all weld count data
+  Future<ApiResponse<List<WeldCountData>>> getAllWeldCounts() async {
+    try {
+      if (!await _hasNetworkConnection()) {
+        return ApiResponse<List<WeldCountData>>(
+          success: false,
+          timestamp: DateTime.now().toIso8601String(),
+          error: 'No network connection',
+          data: _cachedWeldCounts,
+        );
+      }
+
+      final response = await http.get(
+        Uri.parse('${SettingsService.instance.baseUrl}/api/weld-counts'),
+        headers: _headers,
+      ).timeout(SettingsService.instance.httpTimeout);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final List<dynamic> weldList = jsonData['data'] as List<dynamic>;
+        final weldCounts = weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
+
+        // Cache the weld counts
+        _cachedWeldCounts = weldCounts;
+        await _saveCachedData();
+
+        return ApiResponse<List<WeldCountData>>(
+          success: true,
+          timestamp: jsonData['timestamp'],
+          data: weldCounts,
+        );
+      } else {
+        return ApiResponse<List<WeldCountData>>(
+          success: false,
+          timestamp: DateTime.now().toIso8601String(),
+          error: 'Server error: ${response.statusCode}',
+          data: _cachedWeldCounts,
+        );
+      }
+    } catch (e) {
+      return ApiResponse<List<WeldCountData>>(
+        success: false,
+        timestamp: DateTime.now().toIso8601String(),
+        error: 'Network error: $e',
+        data: _cachedWeldCounts,
+      );
+    }
+  }
+
+  // Get weld count for specific gun
+  Future<ApiResponse<WeldCountData>> getWeldCountById(int gunIndex) async {
+    try {
+      if (!await _hasNetworkConnection()) {
+        final cachedWeld = _cachedWeldCounts.firstWhere(
+          (weld) => weld.gunIndex == gunIndex,
+          orElse: () => throw Exception('Weld count not found in cache'),
+        );
+        return ApiResponse<WeldCountData>(
+          success: false,
+          timestamp: DateTime.now().toIso8601String(),
+          error: 'No network connection',
+          data: cachedWeld,
+        );
+      }
+
+      final response = await http.get(
+        Uri.parse('${SettingsService.instance.baseUrl}/api/weld-counts/$gunIndex'),
+        headers: _headers,
+      ).timeout(SettingsService.instance.httpTimeout);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final weldCount = WeldCountData.fromJson(jsonData['data']);
+
+        return ApiResponse<WeldCountData>(
+          success: true,
+          timestamp: jsonData['timestamp'],
+          data: weldCount,
+        );
+      } else {
+        return ApiResponse<WeldCountData>(
+          success: false,
+          timestamp: DateTime.now().toIso8601String(),
+          error: 'Server error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return ApiResponse<WeldCountData>(
+        success: false,
+        timestamp: DateTime.now().toIso8601String(),
+        error: 'Network error: $e',
+      );
+    }
+  }
+
   Future<ApiResponse<GunData>> getGunById(int gunIndex) async {
     try {
       if (!await _hasNetworkConnection()) {
@@ -203,7 +304,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         final gun = GunData.fromJson(jsonData['data']);
-        
+
         return ApiResponse<GunData>(
           success: true,
           timestamp: jsonData['timestamp'],
@@ -262,9 +363,17 @@ class ApiService {
               _alertStreamController?.add(alerts);
 
               _saveCachedData();
+            } else if (jsonData['type'] == 'weld_count_update') {
+              final List<dynamic> weldList = jsonData['data'] as List<dynamic>;
+              final weldCounts = weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
+
+              _cachedWeldCounts = weldCounts;
+              _weldCountStreamController?.add(weldCounts);
+
+              _saveCachedData();
             }
           } catch (e) {
-            print('Error parsing WebSocket data: $e');
+            // Silently handle errors in production
           }
         },
         onError: (error) {
@@ -319,18 +428,24 @@ class ApiService {
       final prefs = await SharedPreferences.getInstance();
       final cachedGunsJson = prefs.getString(ApiConfig.cachedGunsKey);
       final cachedAlertsJson = prefs.getString(ApiConfig.cachedAlertsKey);
-      
+      final cachedWeldCountsJson = prefs.getString('cached_weld_counts');
+
       if (cachedGunsJson != null) {
         final List<dynamic> gunList = json.decode(cachedGunsJson);
         _cachedGunData = gunList.map((gun) => GunData.fromJson(gun)).toList();
       }
-      
+
       if (cachedAlertsJson != null) {
         final List<dynamic> alertList = json.decode(cachedAlertsJson);
         _cachedAlerts = alertList.map((alert) => AlertData.fromJson(alert)).toList();
       }
+
+      if (cachedWeldCountsJson != null) {
+        final List<dynamic> weldList = json.decode(cachedWeldCountsJson);
+        _cachedWeldCounts = weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
+      }
     } catch (e) {
-      print('Error loading cached data: $e');
+      // Silently handle errors in production
     }
   }
 
@@ -339,8 +454,9 @@ class ApiService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(ApiConfig.cachedGunsKey, json.encode(_cachedGunData.map((gun) => gun.toJson()).toList()));
       await prefs.setString(ApiConfig.cachedAlertsKey, json.encode(_cachedAlerts.map((alert) => alert.toJson()).toList()));
+      await prefs.setString('cached_weld_counts', json.encode(_cachedWeldCounts.map((weld) => weld.toJson()).toList()));
     } catch (e) {
-      print('Error saving cached data: $e');
+      // Silently handle errors in production
     }
   }
 
@@ -349,6 +465,7 @@ class ApiService {
     _channel?.sink.close();
     _dataStreamController?.close();
     _alertStreamController?.close();
+    _weldCountStreamController?.close();
     _reconnectTimer?.cancel();
     _pollTimer?.cancel();
   }

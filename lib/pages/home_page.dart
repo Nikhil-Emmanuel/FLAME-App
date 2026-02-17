@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'gun_status_page.dart';
-import 'pie_chart_page.dart';
+import 'flow_rate_trends_page.dart';
 import 'day_min_max_page.dart';
 import 'rate_of_temperature_page.dart';
 import 'emergency_alerts_page.dart';
+import 'gun_inching_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,18 +19,20 @@ class _HomePageState extends State<HomePage> {
 
   final List<String> _menuTitles = [
     'Live Gun Status',
-    'Status Overview',
+    'Flow Rate Trends',
     'Daily Min/Max',
     'Temperature Trends',
-    'Emergency Alerts'
+    'Emergency Alerts',
+    'Gun Inching'
   ];
 
   final List<Widget> _pages = [
     const GunStatusPage(),
-    const PieChartPage(),
+    const FlowRateTrendsPage(),
     const DayMinMaxPage(),
     const RateOfTemperaturePage(),
     const EmergencyAlertsPage(),
+    const GunInchingPage(),
   ];
 
   void _onSelectPage(int index) {
@@ -42,10 +45,11 @@ class _HomePageState extends State<HomePage> {
   Icon _getMenuIcon(int index) {
     switch (index) {
       case 0: return const Icon(Icons.monitor_heart); // Live Gun Status
-      case 1: return const Icon(Icons.pie_chart); // Status Overview
+      case 1: return const Icon(Icons.show_chart); // Flow Rate Trends
       case 2: return const Icon(Icons.trending_up); // Daily Min/Max
       case 3: return const Icon(Icons.thermostat); // Temperature Trends
       case 4: return const Icon(Icons.warning); // Emergency Alerts
+      case 5: return const Icon(Icons.build); // Gun Inching
       default: return const Icon(Icons.dashboard);
     }
   }

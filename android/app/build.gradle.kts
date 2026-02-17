@@ -6,7 +6,7 @@ plugins {
 }
 val kotlin_version = "1.9.10"
 android {
-    namespace = "com.example.flame"
+    namespace = "com.flame.nevark"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -15,13 +15,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
         isCoreLibraryDesugaringEnabled = true
     }
-    
+
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
-        applicationId = "com.example.flame"
+        applicationId = "com.flame.nevark"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

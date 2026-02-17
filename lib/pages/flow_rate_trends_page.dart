@@ -7,16 +7,16 @@ import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
 import '../models/gun_data.dart';
 
-class RateOfTemperaturePage extends StatefulWidget {
-  const RateOfTemperaturePage({super.key});
+class FlowRateTrendsPage extends StatefulWidget {
+  const FlowRateTrendsPage({super.key});
 
   @override
-  State<RateOfTemperaturePage> createState() => _RateOfTemperaturePageState();
+  State<FlowRateTrendsPage> createState() => _FlowRateTrendsPageState();
 }
 
-class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
+class _FlowRateTrendsPageState extends State<FlowRateTrendsPage> {
   final Random _random = Random();
-  final Map<String, List<FlSpot>> _gunTempHistory = {};
+  final Map<String, List<FlSpot>> _gunFlowHistory = {};
   final Map<String, Color> _gunColors = {};
   StreamSubscription<List<GunData>>? _dataSubscription;
   double _time = 0;
@@ -40,28 +40,27 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
           
           for (var gun in data) {
             // Initialize storage if first time
-            if (!_gunTempHistory.containsKey(gun.gunName)) {
-              _gunTempHistory[gun.gunName] = [];
+            if (!_gunFlowHistory.containsKey(gun.gunName)) {
+              _gunFlowHistory[gun.gunName] = [];
               _gunColors[gun.gunName] = _generateDistinctColor();
             }
             
-            // Parse temperature with better error handling
-            final tempString = gun.tempDisplay?.trim() ?? '';
-            final tempValue = double.tryParse(tempString.replaceAll(RegExp(r'[^\d.-]'), ''));
+            // Use flow rate directly
+            final flowValue = gun.flowRate;
             
-            if (tempValue != null && tempValue >= 0 && tempValue <= 100) { // Reasonable temperature range
+            if (flowValue >= 0 && flowValue <= 100) { // Reasonable flow rate range
               // Normalize X values to prevent gaps when data points are missing
-              final double normalizedTime = _gunTempHistory[gun.gunName]!.isEmpty 
+              final double normalizedTime = _gunFlowHistory[gun.gunName]!.isEmpty 
                   ? 0 
-                  : _gunTempHistory[gun.gunName]!.last.x + 1;
+                  : _gunFlowHistory[gun.gunName]!.last.x + 1;
               
-              _gunTempHistory[gun.gunName]!.add(FlSpot(normalizedTime, tempValue));
+              _gunFlowHistory[gun.gunName]!.add(FlSpot(normalizedTime, flowValue));
               
               // Keep only last 50 points for performance
-              if (_gunTempHistory[gun.gunName]!.length > 50) {
-                _gunTempHistory[gun.gunName]!.removeAt(0);
+              if (_gunFlowHistory[gun.gunName]!.length > 50) {
+                _gunFlowHistory[gun.gunName]!.removeAt(0);
                 // Shift all remaining points to maintain continuity
-                _gunTempHistory[gun.gunName] = _gunTempHistory[gun.gunName]!
+                _gunFlowHistory[gun.gunName] = _gunFlowHistory[gun.gunName]!
                     .asMap()
                     .entries
                     .map((entry) => FlSpot(entry.key.toDouble(), entry.value.y))
@@ -72,7 +71,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
         });
       },
       onError: (error) {
-        debugPrint("Temperature stream error: $error");
+        debugPrint("Flow rate stream error: $error");
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -105,7 +104,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
   }
 
   Widget _buildChart(String gun, {bool expanded = false}) {
-    final spots = _gunTempHistory[gun] ?? [];
+    final spots = _gunFlowHistory[gun] ?? [];
     final color = _gunColors[gun] ?? Colors.blue;
 
     // Calculate proper axis bounds
@@ -160,7 +159,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                         border: Border.all(color: color.withValues(alpha: 0.3)),
                       ),
                       child: Text(
-                        '${spots.last.y.toStringAsFixed(1)}°C',
+                        '${spots.last.y.toStringAsFixed(1)} L/min',
                         style: TextStyle(
                           fontSize: expanded ? 16 : 12,
                           fontWeight: FontWeight.w600,
@@ -182,11 +181,11 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                       enabled: true,
                       touchTooltipData: LineTouchTooltipData(
                         getTooltipColor: (touchedSpot) => Colors.white,
-                        
+
                         getTooltipItems: (touchedSpots) {
                           return touchedSpots.map((spot) {
                             return LineTooltipItem(
-                              '${spot.y.toStringAsFixed(1)}°C',
+                              '${spot.y.toStringAsFixed(1)} L/min',
                               TextStyle(
                                 color: color,
                                 fontWeight: FontWeight.bold,
@@ -218,7 +217,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                           reservedSize: expanded ? 30 : 24,
                           interval: max(1, (maxX / 5).ceilToDouble()),
                           getTitlesWidget: (value, meta) {
-                            if (value == minX || value == maxX || 
+                            if (value == minX || value == maxX ||
                                 value % max(1, (maxX / 3).ceilToDouble()) == 0) {
                               return Padding(
                                 padding: const EdgeInsets.only(top: 4),
@@ -340,7 +339,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "No temperature data",
+                      "No flow rate data",
                       style: TextStyle(
                         fontSize: expanded ? 16 : 12,
                         color: Colors.grey[500],
@@ -377,7 +376,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Temperature Trend - $gun',
+                      'Flow Rate Trend - $gun',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -418,7 +417,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
         backgroundColor: Colors.blue.shade800,
         foregroundColor: Colors.white,
         title: const Text(
-          "Temperature Trends",
+          "Flow Rate Trends",
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         elevation: 0,
@@ -433,7 +432,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    "Loading temperature data...",
+                    "Loading flow rate data...",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -442,19 +441,19 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                 ],
               ),
             )
-          : _gunTempHistory.isEmpty
+          : _gunFlowHistory.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.thermostat,
+                        Icons.show_chart,
                         size: 64,
                         color: Colors.white.withValues(alpha: 0.7),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        "No temperature data available",
+                        "No flow rate data available",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -476,7 +475,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                   builder: (context, constraints) {
                     int crossAxisCount;
                     double childAspectRatio;
-                    
+
                     if (constraints.maxWidth > 1200) {
                       crossAxisCount = 4;
                       childAspectRatio = 1.2;
@@ -490,12 +489,12 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
                       crossAxisCount = 1;
                       childAspectRatio = 1.5;
                     }
-                    
+
                     return GridView.count(
                       crossAxisCount: crossAxisCount,
                       childAspectRatio: childAspectRatio,
                       padding: const EdgeInsets.all(8),
-                      children: _gunTempHistory.keys
+                      children: _gunFlowHistory.keys
                           .map((gun) => _buildChart(gun))
                           .toList(),
                     );

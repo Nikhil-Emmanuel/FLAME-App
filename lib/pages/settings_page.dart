@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/settings_service.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -513,6 +514,32 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               secondary: const Icon(Icons.notifications),
             ),
+            if (_enableNotifications)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await NotificationService.instance.sendTestNotification();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Test notification sent!'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.notification_add),
+                    label: const Text('Send Test Notification'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue.shade800,
+                    ),
+                  ),
+                ),
+              ),
             SwitchListTile(
               title: const Text('Enable WebSocket'),
               subtitle: const Text('Use real-time WebSocket connection'),
