@@ -41,22 +41,27 @@ class GunData {
     return 'Immediate Action';
   }
   
-  // Alert status
-  bool get isAlert {
-    return temperature > 45.0 || flowRate < 8.0;
+  // Alert status - uses dynamic thresholds from settings
+  bool isAlertWithThresholds(double highTemp, double lowFlow) {
+    return temperature > highTemp || flowRate < lowFlow;
   }
-  
-  String get alertType {
-    if (temperature > 45.0) return 'HIGH_TEMPERATURE';
-    if (flowRate < 8.0) return 'LOW_FLOW';
+
+  String alertTypeWithThresholds(double highTemp, double lowFlow) {
+    if (temperature > highTemp) return 'HIGH_TEMPERATURE';
+    if (flowRate < lowFlow) return 'LOW_FLOW';
     return 'NONE';
   }
-  
-  String get severity {
-    if (temperature > 50.0 || flowRate < 5.0) return 'CRITICAL';
-    if (temperature > 45.0 || flowRate < 8.0) return 'WARNING';
+
+  String severityWithThresholds(double criticalTemp, double criticalFlow, double highTemp, double lowFlow) {
+    if (temperature > criticalTemp || flowRate < criticalFlow) return 'CRITICAL';
+    if (temperature > highTemp || flowRate < lowFlow) return 'WARNING';
     return 'NORMAL';
   }
+
+  // Legacy getters for backward compatibility
+  bool get isAlert => temperature > 45.0 || flowRate < 8.0;
+  String get alertType => temperature > 45.0 ? 'HIGH_TEMPERATURE' : flowRate < 8.0 ? 'LOW_FLOW' : 'NONE';
+  String get severity => temperature > 50.0 || flowRate < 5.0 ? 'CRITICAL' : temperature > 45.0 || flowRate < 8.0 ? 'WARNING' : 'NORMAL';
 
   @override
   String toString() {

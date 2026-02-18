@@ -87,8 +87,11 @@ class _GunStatsChartState extends State<DayMinMaxPage> {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Daily Min/Max"),
-          backgroundColor: Colors.blue.shade900,
+          backgroundColor: Colors.blue.shade800,
+          foregroundColor: Colors.white,
+          title: const Text("Daily Min/Max",
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          elevation: 0,
         ),
         backgroundColor: Colors.blue.shade900,
         body: const Center(
@@ -113,7 +116,8 @@ class _GunStatsChartState extends State<DayMinMaxPage> {
       );
     }
 
-    final selectedMinMax = selectedGun != null ? minMaxData[selectedGun!] : null;
+    final selectedMinMax =
+        selectedGun != null ? minMaxData[selectedGun!] : null;
     final currentGun = currentGunData.firstWhere(
       (gun) => gun.gunName == selectedGun,
       orElse: () => currentGunData.first,
@@ -137,172 +141,199 @@ class _GunStatsChartState extends State<DayMinMaxPage> {
           padding: const EdgeInsets.all(20),
           child: ListView(
             children: [
-            // Gun selector
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButton<String>(
-                value: selectedGun,
-                dropdownColor: Colors.white,
-                isExpanded: true,
-                underline: Container(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedGun = value!;
-                  });
-                },
-                items: currentGunData.map((gun) {
-                  return DropdownMenuItem(
-                    value: gun.gunName,
-                    child: Text(
-                      gun.gunName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Date info
-            Text(
-              "Today's Min/Max for $selectedGun",
-              style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              MinMaxService.instance.getTodayDateString(),
-              style: const TextStyle(fontSize: 14, color: Colors.white70),
-            ),
-            const SizedBox(height: 20),
-
-            /// 🚫 Infinite size fix with SizedBox constraint
-            // Current values display
-            if (selectedMinMax != null) ...[
-              _buildDataCard('Current Live Values', [
-                _buildDataRow('Flow Rate', '${currentGun.flowRate.toStringAsFixed(1)} L/min', Colors.blue),
-                _buildDataRow('Temperature', '${currentGun.temperature.toStringAsFixed(1)} °C', Colors.orange),
-              ]),
-              const SizedBox(height: 20),
-
-              _buildDataCard('Today\'s Min/Max Values', [
-                _buildDataRow('Min Flow', '${selectedMinMax.minFlow.toStringAsFixed(1)} L/min', Colors.teal),
-                _buildDataRow('Max Flow', '${selectedMinMax.maxFlow.toStringAsFixed(1)} L/min', Colors.teal.shade700),
-                _buildDataRow('Min Temp', '${selectedMinMax.minTemp.toStringAsFixed(1)} °C', Colors.blue),
-                _buildDataRow('Max Temp', '${selectedMinMax.maxTemp.toStringAsFixed(1)} °C', Colors.red),
-              ]),
-              const SizedBox(height: 20),
-
-              // Chart
-              SizedBox(
-                height: 300,
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    barGroups: [
-                      BarChartGroupData(
-                        x: 0,
-                        barRods: [
-                          BarChartRodData(
-                            toY: selectedMinMax.minFlow,
-                            color: Colors.teal,
-                            width: 15,
-                          ),
-                          BarChartRodData(
-                            toY: selectedMinMax.maxFlow,
-                            color: Colors.orange,
-                            width: 15,
-                          ),
-                        ],
-                        barsSpace: 4,
+              // Gun selector
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String>(
+                  value: selectedGun,
+                  dropdownColor: Colors.white,
+                  isExpanded: true,
+                  underline: Container(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedGun = value!;
+                    });
+                  },
+                  items: currentGunData.map((gun) {
+                    return DropdownMenuItem(
+                      value: gun.gunName,
+                      child: Text(
+                        gun.gunName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      BarChartGroupData(
-                        x: 1,
-                        barRods: [
-                          BarChartRodData(
-                            toY: selectedMinMax.minTemp,
-                            color: Colors.blue,
-                            width: 15,
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Date info
+              Text(
+                "Today's Min/Max for $selectedGun",
+                style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
+              ),
+              Text(
+                MinMaxService.instance.getTodayDateString(),
+                style: const TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+              const SizedBox(height: 20),
+
+              /// 🚫 Infinite size fix with SizedBox constraint
+              // Current values display
+              if (selectedMinMax != null) ...[
+                _buildDataCard('Current Live Values', [
+                  _buildDataRow(
+                      'Flow Rate',
+                      '${currentGun.flowRate.toStringAsFixed(1)} L/min',
+                      Colors.blue),
+                  _buildDataRow(
+                      'Temperature',
+                      '${currentGun.temperature.toStringAsFixed(1)} °C',
+                      Colors.orange),
+                ]),
+                const SizedBox(height: 20),
+
+                _buildDataCard('Today\'s Min/Max Values', [
+                  _buildDataRow(
+                      'Min Flow',
+                      '${selectedMinMax.minFlow.toStringAsFixed(1)} L/min',
+                      Colors.teal),
+                  _buildDataRow(
+                      'Max Flow',
+                      '${selectedMinMax.maxFlow.toStringAsFixed(1)} L/min',
+                      Colors.teal.shade700),
+                  _buildDataRow(
+                      'Min Temp',
+                      '${selectedMinMax.minTemp.toStringAsFixed(1)} °C',
+                      Colors.blue),
+                  _buildDataRow(
+                      'Max Temp',
+                      '${selectedMinMax.maxTemp.toStringAsFixed(1)} °C',
+                      Colors.red),
+                ]),
+                const SizedBox(height: 20),
+
+                // Chart
+                SizedBox(
+                  height: 300,
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      barGroups: [
+                        BarChartGroupData(
+                          x: 0,
+                          barRods: [
+                            BarChartRodData(
+                              toY: selectedMinMax.minFlow,
+                              color: Colors.teal,
+                              width: 15,
+                            ),
+                            BarChartRodData(
+                              toY: selectedMinMax.maxFlow,
+                              color: Colors.orange,
+                              width: 15,
+                            ),
+                          ],
+                          barsSpace: 4,
+                        ),
+                        BarChartGroupData(
+                          x: 1,
+                          barRods: [
+                            BarChartRodData(
+                              toY: selectedMinMax.minTemp,
+                              color: Colors.blue,
+                              width: 15,
+                            ),
+                            BarChartRodData(
+                              toY: selectedMinMax.maxTemp,
+                              color: Colors.redAccent,
+                              width: 15,
+                            ),
+                          ],
+                          barsSpace: 4,
+                        ),
+                      ],
+                      titlesData: FlTitlesData(
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, _) {
+                              switch (value.toInt()) {
+                                case 0:
+                                  return const Text("Flow",
+                                      style: TextStyle(color: Colors.white));
+                                case 1:
+                                  return const Text("Temp",
+                                      style: TextStyle(color: Colors.white));
+                                default:
+                                  return const SizedBox.shrink();
+                              }
+                            },
                           ),
-                          BarChartRodData(
-                            toY: selectedMinMax.maxTemp,
-                            color: Colors.redAccent,
-                            width: 15,
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, _) => Text(
+                              value.toInt().toString(),
+                              style: const TextStyle(color: Colors.white),
+                            ),
                           ),
-                        ],
-                        barsSpace: 4,
+                        ),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // No min/max data available yet
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.info_outline,
+                          color: Colors.white, size: 48),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No min/max data available yet',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Data will be collected as live updates are received',
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Current: ${currentGun.flowRate.toStringAsFixed(1)} L/min, ${currentGun.temperature.toStringAsFixed(1)} °C',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ],
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) {
-                          switch (value.toInt()) {
-                            case 0:
-                              return const Text("Flow",
-                                  style: TextStyle(color: Colors.white));
-                            case 1:
-                              return const Text("Temp",
-                                  style: TextStyle(color: Colors.white));
-                            default:
-                              return const SizedBox.shrink();
-                          }
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) => Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    topTitles:
-                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles:
-                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-                  gridData: const FlGridData(show: false),
-                  borderData: FlBorderData(show: false),
                 ),
-              ),
-            ),
-            ] else ...[
-              // No min/max data available yet
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(Icons.info_outline, color: Colors.white, size: 48),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No min/max data available yet',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Data will be collected as live updates are received',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Current: ${currentGun.flowRate.toStringAsFixed(1)} L/min, ${currentGun.temperature.toStringAsFixed(1)} °C',
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
             ],
           ),
         ),

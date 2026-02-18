@@ -34,7 +34,7 @@ class SettingsService {
   static const double _defaultLowFlowThreshold = 8.0;
   static const double _defaultCriticalTempThreshold = 50.0;
   static const double _defaultCriticalFlowThreshold = 5.0;
-  static const bool _defaultEnableNotifications = true;
+  static const bool _defaultEnableNotifications = false;
   static const bool _defaultEnableWebSocket = true;
   static const bool _defaultEnableOfflineMode = true;
   

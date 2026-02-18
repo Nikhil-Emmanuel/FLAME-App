@@ -1,31 +1,122 @@
 [
   {
     "gunIndex": 1,
-    "timestamp": "2026-02-17 21:30:18 +05:30",
-    "flowRate": 11.3,
-    "temperature": 43.9
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 10,
+    "temperature": 38.8
   },
   {
     "gunIndex": 2,
-    "timestamp": "2026-02-17 21:30:18 +05:30",
-    "flowRate": 6.3,
-    "temperature": 36.4
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 8.8,
+    "temperature": 36.6
   },
   {
     "gunIndex": 3,
-    "timestamp": "2026-02-17 21:30:18 +05:30",
-    "flowRate": 11.5,
-    "temperature": 36
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 9,
+    "temperature": 41.2
   },
   {
     "gunIndex": 4,
-    "timestamp": "2026-02-17 21:30:18 +05:30",
-    "flowRate": 9.2,
-    "temperature": 44.7
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 5.9,
+    "temperature": 44
   },
   {
     "gunIndex": 5,
-    "timestamp": "2026-02-17 21:30:18 +05:30",
-    "flowRate": 5.8,
-    "temperature": 43.8
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 7,
+    "temperature": 44.1
+  },
+  {
+    "gunIndex": 6,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 8.9,
+    "temperature": 41.5
+  },
+  {
+    "gunIndex": 7,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 5.2,
+    "temperature": 36
+  },
+  {
+    "gunIndex": 8,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 9.7,
+    "temperature": 39.1
+  },
+  {
+    "gunIndex": 9,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 5.6,
+    "temperature": 44.7
+  },
+  {
+    "gunIndex": 10,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 9.4,
+    "temperature": 39.8
+  },
+  {
+    "gunIndex": 11,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 11.4,
+    "temperature": 43.3
+  },
+  {
+    "gunIndex": 12,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 6.3,
+    "temperature": 39.3
+  },
+  {
+    "gunIndex": 13,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 7.4,
+    "temperature": 38.5
+  },
+  {
+    "gunIndex": 14,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 10.6,
+    "temperature": 36
+  },
+  {
+    "gunIndex": 15,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 10.8,
+    "temperature": 36.5
+  },
+  {
+    "gunIndex": 16,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 8.6,
+    "temperature": 36.3
+  },
+  {
+    "gunIndex": 17,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 5.5,
+    "temperature": 38.8
+  },
+  {
+    "gunIndex": 18,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 10.2,
+    "temperature": 36.3
+  },
+  {
+    "gunIndex": 19,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 8.2,
+    "temperature": 44
+  },
+  {
+    "gunIndex": 20,
+    "timestamp": "2026-02-18 22:36:16 +05:30",
+    "flowRate": 10.2,
+    "temperature": 42.3
   }
+]

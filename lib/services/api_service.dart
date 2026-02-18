@@ -1,5 +1,8 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +12,25 @@ import '../models/weld_count_data.dart';
 import '../config/api_config.dart';
 import 'settings_service.dart';
 import 'min_max_service.dart';
+
+// Isolate functions for heavy JSON parsing
+List<GunData> _parseGunDataList(String jsonString) {
+  final jsonData = json.decode(jsonString);
+  final List<dynamic> gunList = jsonData['data'] as List<dynamic>;
+  return gunList.map((gun) => GunData.fromJson(gun)).toList();
+}
+
+List<AlertData> _parseAlertDataList(String jsonString) {
+  final jsonData = json.decode(jsonString);
+  final List<dynamic> alertList = jsonData['alerts'] as List<dynamic>;
+  return alertList.map((alert) => AlertData.fromJson(alert)).toList();
+}
+
+List<WeldCountData> _parseWeldCountDataList(String jsonString) {
+  final jsonData = json.decode(jsonString);
+  final List<dynamic> weldList = jsonData['data'] as List<dynamic>;
+  return weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
+}
 
 class ApiService {
   
@@ -99,16 +121,16 @@ class ApiService {
       ).timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
+        // Parse JSON in isolate to avoid blocking UI
+        final guns = await compute(_parseGunDataList, response.body);
         final jsonData = json.decode(response.body);
-        final List<dynamic> gunList = jsonData['data'] as List<dynamic>;
-        final guns = gunList.map((gun) => GunData.fromJson(gun)).toList();
-        
+
         // Cache the data
         _cachedGunData = guns;
         await _saveCachedData();
 
-        // Update min/max tracking
-        await MinMaxService.instance.updateWithGunData(guns);
+        // Update min/max tracking in parallel
+        unawaited(MinMaxService.instance.updateWithGunData(guns));
 
         _isConnected = true;
         return ApiResponse<List<GunData>>(
@@ -154,14 +176,14 @@ class ApiService {
       ).timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
+        // Parse JSON in isolate to avoid blocking UI
+        final alerts = await compute(_parseAlertDataList, response.body);
         final jsonData = json.decode(response.body);
-        final List<dynamic> alertList = jsonData['alerts'] as List<dynamic>;
-        final alerts = alertList.map((alert) => AlertData.fromJson(alert)).toList();
-        
+
         // Cache the alerts
         _cachedAlerts = alerts;
         await _saveCachedData();
-        
+
         return ApiResponse<List<AlertData>>(
           success: true,
           timestamp: jsonData['timestamp'],
@@ -204,9 +226,9 @@ class ApiService {
       ).timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
+        // Parse JSON in isolate to avoid blocking UI
+        final weldCounts = await compute(_parseWeldCountDataList, response.body);
         final jsonData = json.decode(response.body);
-        final List<dynamic> weldList = jsonData['data'] as List<dynamic>;
-        final weldCounts = weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
 
         // Cache the weld counts
         _cachedWeldCounts = weldCounts;
@@ -347,15 +369,19 @@ class ApiService {
               // Update min/max tracking
               await MinMaxService.instance.updateWithGunData(guns);
 
-              // Extract alerts from gun data
-              final alerts = guns.where((gun) => gun.isAlert).map((gun) =>
+              // Extract alerts from gun data using settings thresholds
+              final settings = SettingsService.instance;
+              final alerts = guns.where((gun) => gun.isAlertWithThresholds(
+                settings.highTemperatureThreshold,
+                settings.lowFlowThreshold
+              )).map((gun) =>
                 AlertData(
                   gunIndex: gun.gunIndex,
                   timestamp: gun.timestamp,
                   flowRate: gun.flowRate,
                   temperature: gun.temperature,
-                  alertType: gun.alertType,
-                  severity: gun.severity,
+                  alertType: gun.alertTypeWithThresholds(settings.highTemperatureThreshold, settings.lowFlowThreshold),
+                  severity: gun.severityWithThresholds(settings.criticalTemperatureThreshold, settings.criticalFlowThreshold, settings.highTemperatureThreshold, settings.lowFlowThreshold),
                 )
               ).toList();
 

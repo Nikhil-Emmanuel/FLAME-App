@@ -101,8 +101,11 @@ class _GunInchingPageState extends State<GunInchingPage> {
     return Scaffold(
       backgroundColor: Colors.blue.shade900,
       appBar: AppBar(
-        title: const Text("Gun Inching"),
         backgroundColor: Colors.blue.shade800,
+        foregroundColor: Colors.white,
+        title: const Text("Gun Inching",
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -122,23 +125,28 @@ class _GunInchingPageState extends State<GunInchingPage> {
                 padding: const EdgeInsets.all(8),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: ApiService.instance.isConnected ? Colors.orange : Colors.red,
+                  color: ApiService.instance.isConnected
+                      ? Colors.orange
+                      : Colors.red,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      ApiService.instance.isConnected ? Icons.warning : Icons.offline_bolt,
+                      ApiService.instance.isConnected
+                          ? Icons.warning
+                          : Icons.offline_bolt,
                       color: Colors.white,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        ApiService.instance.isConnected 
-                          ? 'Using cached data' 
-                          : 'Offline - Using cached data',
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ApiService.instance.isConnected
+                            ? 'Using cached data'
+                            : 'Offline - Using cached data',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
                   ],
@@ -165,7 +173,8 @@ class _GunInchingPageState extends State<GunInchingPage> {
                             padding: EdgeInsets.all(16.0),
                             child: Text(
                               'No guns available',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16),
                             ),
                           ),
                         )
@@ -173,9 +182,11 @@ class _GunInchingPageState extends State<GunInchingPage> {
                           value: selectedGun,
                           isExpanded: true,
                           dropdownColor: Colors.blue.shade800,
-                          style: const TextStyle(color: Colors.white, fontSize: 18),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 18),
                           underline: Container(),
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Colors.white),
                           items: weldCountData.map((gun) {
                             return DropdownMenuItem<WeldCountData>(
                               value: gun,
@@ -348,4 +359,3 @@ class _GunInchingPageState extends State<GunInchingPage> {
     }
   }
 }
-

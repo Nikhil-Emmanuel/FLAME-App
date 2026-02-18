@@ -1,7 +1,7 @@
 name: flame
-description: F.L.A.M.E - Factory Line Alert Monitoring & Equipment tracking system for industrial gun equipment monitoring.
+description: F.L.A.M.E - The One Stop Solution to All Manufacturing Needs for Predictive Maintenance.
 
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -11,20 +11,39 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.2
   pie_chart: ^5.3.2
-  fl_chart: ^1.0.0
+  fl_chart: ^0.70.0
   http: ^1.1.0
   web_socket_channel: ^3.0.3
   shared_preferences: ^2.2.2
-  connectivity_plus: ^6.1.5
-  flutter_local_notifications: ^19.4.1 
+  connectivity_plus: ^7.0.0
+  flutter_local_notifications: ^17.0.0
+  google_fonts: ^6.2.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/image.png
+    - assets/icon/flame.png
+    - assets/splash/splash_logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/flame(2).png"
+
+  
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/splash/splash_logo.png
+  android: true
+  ios: true
+  fullscreen: true

@@ -8,9 +8,29 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final _userController = TextEditingController();
   final _passController = TextEditingController();
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _animController, curve: Curves.easeIn));
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    _userController.dispose();
+    _passController.dispose();
+    super.dispose();
+  }
 
   void _login() {
     if (_userController.text.isNotEmpty && _passController.text.isNotEmpty) {
@@ -28,16 +48,20 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(color: const Color.fromARGB(255, 207, 222, 244)),
-          Positioned(
-            top: 40,
-            right: 20,
-            child: Image.asset('assets/image.png', height: 80),
-          ),
-          Center(
-            child: Container(
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: Stack(
+          children: [
+            Container(color: const Color.fromARGB(255, 207, 222, 244)),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: Image.asset('assets/image.png', height: 80),
+            ),
+            Center(
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Container(
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.symmetric(horizontal: 30),
               decoration: BoxDecoration(
@@ -74,8 +98,10 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

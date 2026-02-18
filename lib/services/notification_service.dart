@@ -36,7 +36,7 @@ class NotificationService {
       macOS: iosSettings,
     );
     
-    // Initialize the plugin
+    // Initialize the plugin (v17+ API - named parameters)
     await _notificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
@@ -215,7 +215,6 @@ class NotificationService {
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
-      macOS: iosDetails,
     );
 
     await _notificationsPlugin.show(
