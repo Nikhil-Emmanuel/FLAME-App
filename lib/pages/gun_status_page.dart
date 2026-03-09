@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:pie_chart/pie_chart.dart';
 import '../services/api_service.dart';
+import '../services/settings_service.dart';
 import '../models/gun_data.dart';
 
 class GunStatusPage extends StatefulWidget {
@@ -78,9 +80,9 @@ class _GunStatusPageState extends State<GunStatusPage> {
       appBar: AppBar(
         backgroundColor: Colors.blue.shade800,
         foregroundColor: Colors.white,
-        title: const Text('Gun Status',
+        title: const Text('Gun Overview',
             style: TextStyle(fontWeight: FontWeight.w600)),
-            elevation: 0,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -144,10 +146,17 @@ class _GunStatusPageState extends State<GunStatusPage> {
                               child: CircularProgressIndicator(
                                   color: Colors.white),
                             )
-                          else
+                          else ...[
+                            // Health Status Pie Chart
+                            RepaintBoundary(
+                              child: _HealthStatusPieChart(gunData: gunData),
+                            ),
+                            const SizedBox(height: 24),
+                            // Gun Status Table
                             RepaintBoundary(
                               child: _GunStatusTable(gunData: gunData),
                             ),
+                          ],
 
                           const SizedBox(height: 20),
                           Center(
@@ -178,86 +187,216 @@ class _GunStatusPageState extends State<GunStatusPage> {
   }
 }
 
-// Separate widget for table to optimize repaints
+// Card view for gun status
 class _GunStatusTable extends StatelessWidget {
   const _GunStatusTable({required this.gunData});
 
   final List<GunData> gunData;
 
+  int _getPriority(String status) {
+    switch (status) {
+      case 'Critical':
+        return 0; // Highest priority
+      case 'Marginal':
+      case 'Needs Maintenance': // handle both variants
+        return 1;
+      case 'Good':
+        return 2; // Lowest priority
+      default:
+        return 3;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Table(
-      border: TableBorder.all(color: Colors.white),
-      columnWidths: const {
-        0: FlexColumnWidth(2),
-        1: FlexColumnWidth(3),
-        2: FlexColumnWidth(3),
-        3: FlexColumnWidth(2),
+    final settings = SettingsService.instance;
+    final sortedGuns = List<GunData>.from(gunData)
+      ..sort((a, b) =>
+          _getPriority(a.healthStatusWithThresholds(settings.highTemperatureThreshold, settings.lowFlowThreshold, settings.criticalTemperatureThreshold, settings.criticalFlowThreshold)).compareTo(_getPriority(b.healthStatusWithThresholds(settings.highTemperatureThreshold, settings.lowFlowThreshold, settings.criticalTemperatureThreshold, settings.criticalFlowThreshold))));
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: sortedGuns.length,
+      itemBuilder: (context, index) {
+        final gun = sortedGuns[index];
+        final healthStatus = gun.healthStatusWithThresholds(settings.highTemperatureThreshold, settings.lowFlowThreshold, settings.criticalTemperatureThreshold, settings.criticalFlowThreshold);
+        Color statusColor = healthStatus == 'Good'
+            ? Colors.green
+            : healthStatus == 'Marginal'? Colors.orange: Colors.red;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 🔹 FIRST ROW (Main Info)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "${gun.gunName}  |  ${gun.flowDisplay}  |  ${gun.tempDisplay}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 🔹 SECOND ROW (Status Banner)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(14),
+                    bottomRight: Radius.circular(14),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  healthStatus,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
       },
-      children: [
-        TableRow(
-          decoration: BoxDecoration(color: Colors.blue.shade800),
-          children: const [
-            Padding(
-              padding: EdgeInsets.all(10),
-              child: Text('Gun',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+    );
+  }
+}
+
+// Health Status Pie Chart Widget
+class _HealthStatusPieChart extends StatelessWidget {
+  const _HealthStatusPieChart({required this.gunData});
+
+  final List<GunData> gunData;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = SettingsService.instance;
+
+    // Calculate health status counts
+    int goodCount = 0;
+    int maintenanceCount = 0;
+    int immediateActionCount = 0;
+
+    for (var gun in gunData) {
+      final status = gun.healthStatusWithThresholds(
+        settings.highTemperatureThreshold,
+        settings.lowFlowThreshold,
+        settings.criticalTemperatureThreshold,
+        settings.criticalFlowThreshold
+      );
+      switch (status) {
+        case 'Good':
+          goodCount++;
+          break;
+        case 'Marginal':
+          maintenanceCount++;
+          break;
+        case 'Critical':
+          immediateActionCount++;
+          break;
+      }
+    }
+
+    // Create data map for pie chart with fixed order
+    Map<String, double> dataMap = {};
+    if (goodCount > 0) dataMap['Good'] = goodCount.toDouble();
+    if (maintenanceCount > 0) dataMap['Marginal'] = maintenanceCount.toDouble();
+    if (immediateActionCount > 0) dataMap['Critical'] = immediateActionCount.toDouble();
+
+    // If no data, show placeholder
+    if (dataMap.isEmpty) {
+      dataMap = {'No Data': 1};
+    }
+
+    // Color map matching exact order
+    final Map<String, Color> colorMap = {
+      'Good': Colors.green,
+      'Marginal': Colors.orange,
+      'Critical': Colors.red,
+      'No Data': Colors.grey,
+    };
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Text(
+              'Gun Health Status',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            Padding(
-              padding: EdgeInsets.all(10),
-              child: Text('Flow (L/min)',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            PieChart(
+              dataMap: dataMap,
+              animationDuration: const Duration(milliseconds: 900),
+              chartLegendSpacing: 32,
+              chartRadius: MediaQuery.of(context).size.width / 0.1,
+              colorList: dataMap.keys.map((key) => colorMap[key]!).toList(),
+              initialAngleInDegree: 0,
+              chartType: ChartType.disc,
+              legendOptions: const LegendOptions(
+                showLegendsInRow: false,
+                legendPosition: LegendPosition.right,
+                showLegends: true,
+                legendTextStyle: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                  color: Colors.black87,
+                ),
+              ),
+              chartValuesOptions: const ChartValuesOptions(
+                showChartValueBackground: false,
+                showChartValues: true,
+                showChartValuesInPercentage: false,
+                showChartValuesOutside: false,
+                decimalPlaces: 0,
+                chartValueStyle: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
             ),
-            Padding(
-              padding: EdgeInsets.all(10),
-              child: Text('Temperature (°C)',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-            Padding(
-              padding: EdgeInsets.all(10),
-              child: Text('Status',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            // Summary text
+            Text(
+              'Total Guns: ${gunData.length}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
             ),
           ],
         ),
-        ...gunData.map((gun) {
-          Color statusColor = gun.healthStatus == 'Good'
-              ? Colors.green
-              : gun.healthStatus == 'Maintenance Needed'
-                  ? Colors.orange
-                  : Colors.red;
-
-          return TableRow(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(gun.gunName,
-                    style: const TextStyle(color: Colors.white)),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(gun.flowDisplay,
-                    style: const TextStyle(color: Colors.white)),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(gun.tempDisplay,
-                    style: const TextStyle(color: Colors.white)),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Text(gun.healthStatus,
-                    style: TextStyle(
-                        color: statusColor, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          );
-        }),
-      ],
+      ),
     );
   }
 }

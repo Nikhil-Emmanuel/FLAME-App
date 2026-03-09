@@ -46,7 +46,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
             }
             
             // Parse temperature with better error handling
-            final tempString = gun.tempDisplay?.trim() ?? '';
+            final tempString = gun.tempDisplay.trim();
             final tempValue = double.tryParse(tempString.replaceAll(RegExp(r'[^\d.-]'), ''));
             
             if (tempValue != null && tempValue >= 0 && tempValue <= 100) { // Reasonable temperature range
@@ -305,7 +305,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
     );
   }
 
-  Widget _buildEmptyChart(String gun, bool expanded) {
+  /*Widget _buildEmptyChart(String gun, bool expanded) {
     return Card(
       color: Colors.white,
       elevation: expanded ? 12 : 6,
@@ -354,7 +354,7 @@ class _RateOfTemperaturePageState extends State<RateOfTemperaturePage> {
         ),
       ),
     );
-  }
+  }*/
 
   Widget _buildExpandedChart(String gun) {
     return Scaffold(

@@ -16,6 +16,15 @@ class _EmergencyAlertsPageState extends State<EmergencyAlertsPage> {
   String? errorMessage;
   StreamSubscription<List<AlertData>>? _alertSubscription;
 
+  List<AlertData> _sortAlerts(List<AlertData> data) {
+    data.sort((a, b) {
+      if (a.severity == b.severity) return 0;
+      if (a.severity == 'CRITICAL') return -1;
+      return 1;
+    });
+    return data;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,17 +48,17 @@ class _EmergencyAlertsPageState extends State<EmergencyAlertsPage> {
       final response = await ApiService.instance.getAlerts();
       setState(() {
         if (response.success && response.data != null) {
-          alerts = response.data!;
+          alerts = _sortAlerts(response.data!);
           errorMessage = null;
         } else {
-          alerts = ApiService.instance.cachedAlerts;
+          alerts = _sortAlerts(ApiService.instance.cachedAlerts);
           errorMessage = response.error;
         }
         isLoading = false;
       });
     } catch (e) {
       setState(() {
-        alerts = ApiService.instance.cachedAlerts;
+        alerts = _sortAlerts(ApiService.instance.cachedAlerts);
         errorMessage = 'Failed to load alerts: $e';
         isLoading = false;
       });
@@ -61,7 +70,7 @@ class _EmergencyAlertsPageState extends State<EmergencyAlertsPage> {
       (data) {
         if (mounted) {
           setState(() {
-            alerts = data;
+            alerts = _sortAlerts(data);
             errorMessage = null;
           });
         }
@@ -204,126 +213,91 @@ class _EmergencyAlertsPageState extends State<EmergencyAlertsPage> {
                   ),
                 )
               else
-                SizedBox(
-                  height: 400,
-                  child: ListView.builder(
-                    itemCount: alerts.length,
-                    itemBuilder: (context, index) {
-                      final alert = alerts[index];
-                      Color cardColor = alert.severity == 'CRITICAL'
-                          ? Colors.red.shade400
-                          : Colors.orange.shade400;
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: alerts.length,
+                  itemBuilder: (context, index) {
+                    final alert = alerts[index];
+                    Color cardColor = alert.severity == 'CRITICAL'
+                        ? Colors.red.shade400
+                        : Colors.orange.shade400;
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        color: cardColor,
-                        child: ListTile(
-                          leading: Icon(
-                            alert.severity == 'CRITICAL'
-                                ? Icons.error
-                                : Icons.warning,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                          title: Text(
-                            'Gun: ${alert.gunName}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Flow: ${alert.flowDisplay} | Temp: ${alert.tempDisplay}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black26,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      alert.alertType.replaceAll('_', ' '),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: alert.severity == 'CRITICAL'
-                                          ? Colors.red.shade700
-                                          : Colors.orange.shade700,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      alert.severity,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              color: Colors.white, size: 16),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      color: cardColor,
+                      child: ListTile(
+                        leading: Icon(
+                          alert.severity == 'CRITICAL'
+                              ? Icons.error
+                              : Icons.warning,
+                          color: Colors.white,
+                          size: 32,
                         ),
-                      );
-                    },
-                  ),
+                        title: Text(
+                          'Gun: ${alert.gunName}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Flow: ${alert.flowDisplay} | Temp: ${alert.tempDisplay}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black26,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    alert.alertType.replaceAll('_', ' '),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: alert.severity == 'CRITICAL'
+                                        ? Colors.red.shade700
+                                        : Colors.orange.shade700,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    alert.severity,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
-              const SizedBox(height: 10),
-
               // Action buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _refreshAlerts,
-                    icon: const Icon(Icons.refresh, color: Colors.blue),
-                    label: const Text('Refresh',
-                        style: TextStyle(color: Colors.blue)),
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: alerts.isNotEmpty
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Alert report generated successfully'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        : null,
-                    icon: const Icon(Icons.report, color: Colors.red),
-                    label: const Text('Generate Report',
-                        style: TextStyle(color: Colors.red)),
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                  ),
-                ],
-              ),
+
             ],
           ),
         ),

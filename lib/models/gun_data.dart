@@ -1,11 +1,13 @@
 class GunData {
   final int gunIndex;
+  final String gunName_;
   final String timestamp;
   final double flowRate;
   final double temperature;
 
   GunData({
     required this.gunIndex,
+    required this.gunName_,
     required this.timestamp,
     required this.flowRate,
     required this.temperature,
@@ -14,6 +16,7 @@ class GunData {
   factory GunData.fromJson(Map<String, dynamic> json) {
     return GunData(
       gunIndex: json['gunIndex'] as int,
+      gunName_: json['gunName'] as String,
       timestamp: json['timestamp'] as String,
       flowRate: (json['flowRate'] as num).toDouble(),
       temperature: (json['temperature'] as num).toDouble(),
@@ -23,6 +26,7 @@ class GunData {
   Map<String, dynamic> toJson() {
     return {
       'gunIndex': gunIndex,
+      'gunName_': gunName,
       'timestamp': timestamp,
       'flowRate': flowRate,
       'temperature': temperature,
@@ -30,17 +34,17 @@ class GunData {
   }
 
   // Helper getters for display
-  String get gunName => 'G$gunIndex';
+  String get gunName => gunName_;
   String get flowDisplay => '${flowRate.toStringAsFixed(1)} L/min';
   String get tempDisplay => '${temperature.toStringAsFixed(1)} °C';
-  
-  // Health status based on thresholds
-  String get healthStatus {
-    if (flowRate >= 10 && temperature <= 45) return 'Good';
-    if (flowRate < 10 && temperature <= 45) return 'Maintenance Needed';
-    return 'Immediate Action';
+
+  // Health status based on thresholds from settings
+  String healthStatusWithThresholds(double highTemp, double lowFlow, double criticalTemp, double criticalFlow) {
+    if (temperature > criticalTemp || flowRate < criticalFlow) return 'Critical';
+    if (temperature > highTemp || flowRate < lowFlow) return 'Marginal';
+    return 'Good';
   }
-  
+
   // Alert status - uses dynamic thresholds from settings
   bool isAlertWithThresholds(double highTemp, double lowFlow) {
     return temperature > highTemp || flowRate < lowFlow;
@@ -52,20 +56,31 @@ class GunData {
     return 'NONE';
   }
 
-  String severityWithThresholds(double criticalTemp, double criticalFlow, double highTemp, double lowFlow) {
-    if (temperature > criticalTemp || flowRate < criticalFlow) return 'CRITICAL';
+  String severityWithThresholds(double criticalTemp, double criticalFlow,
+      double highTemp, double lowFlow) {
+    if (temperature > criticalTemp || flowRate < criticalFlow) {
+      return 'CRITICAL';
+    }
     if (temperature > highTemp || flowRate < lowFlow) return 'WARNING';
     return 'NORMAL';
   }
 
   // Legacy getters for backward compatibility
   bool get isAlert => temperature > 45.0 || flowRate < 8.0;
-  String get alertType => temperature > 45.0 ? 'HIGH_TEMPERATURE' : flowRate < 8.0 ? 'LOW_FLOW' : 'NONE';
-  String get severity => temperature > 50.0 || flowRate < 5.0 ? 'CRITICAL' : temperature > 45.0 || flowRate < 8.0 ? 'WARNING' : 'NORMAL';
+  String get alertType => temperature > 45.0
+      ? 'HIGH_TEMPERATURE'
+      : flowRate < 8.0
+          ? 'LOW_FLOW'
+          : 'NONE';
+  String get severity => temperature > 50.0 || flowRate < 5.0
+      ? 'CRITICAL'
+      : temperature > 45.0 || flowRate < 8.0
+          ? 'WARNING'
+          : 'NORMAL';
 
   @override
   String toString() {
-    return 'GunData(gunIndex: $gunIndex, timestamp: $timestamp, flowRate: $flowRate, temperature: $temperature)';
+    return 'GunData(gunIndex: $gunIndex,gunName: $gunName, timestamp: $timestamp, flowRate: $flowRate, temperature: $temperature)';
   }
 }
 
@@ -86,11 +101,14 @@ class ApiResponse<T> {
     this.alertCount,
   });
 
-  factory ApiResponse.fromJson(Map<String, dynamic> json, T Function(dynamic)? fromJsonT) {
+  factory ApiResponse.fromJson(
+      Map<String, dynamic> json, T Function(dynamic)? fromJsonT) {
     return ApiResponse<T>(
       success: json['success'] as bool? ?? false,
       timestamp: json['timestamp'] as String? ?? '',
-      data: json['data'] != null && fromJsonT != null ? fromJsonT(json['data']) : null,
+      data: json['data'] != null && fromJsonT != null
+          ? fromJsonT(json['data'])
+          : null,
       error: json['error'] as String?,
       totalGuns: json['totalGuns'] as int?,
       alertCount: json['alertCount'] as int?,
@@ -111,6 +129,7 @@ class AlertData extends GunData {
     required super.temperature,
     required this.alertType,
     required this.severity,
+    required super.gunName_,
   });
 
   factory AlertData.fromJson(Map<String, dynamic> json) {
@@ -121,6 +140,7 @@ class AlertData extends GunData {
       temperature: (json['temperature'] as num).toDouble(),
       alertType: json['alertType'] as String,
       severity: json['severity'] as String,
+      gunName_: json['gunName'] as String,
     );
   }
 }

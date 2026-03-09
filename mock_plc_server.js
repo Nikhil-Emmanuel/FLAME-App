@@ -8,6 +8,45 @@ const WebSocket = require('ws');
 const CONFIG_FILE = path.join(__dirname, 'settings.json');
 const OUTPUT_FILE = path.join(__dirname, 'sensor_data.json');
 const WELD_COUNT_FILE = path.join(__dirname, 'weld_count_data.json');
+const HISTORY_FILE = path.join(__dirname, 'gun_history.json');
+const MAX_HISTORY_DAYS = 30;
+
+let gunHistory = {};
+try {
+  if (fs.existsSync(HISTORY_FILE)) {
+    gunHistory = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+  }
+} catch (e) {
+  console.error("Failed to load history file:", e);
+}
+
+function storeHistoricalData(data) {
+
+  const now = Date.now();
+  const cutoff = now - (MAX_HISTORY_DAYS * 24 * 60 * 60 * 1000);
+
+  data.forEach(gun => {
+
+    const gunName = gun.gunName || `Gun ${gun.gunIndex}`;
+
+    if (!gunHistory[gunName]) {
+      gunHistory[gunName] = [];
+    }
+
+    gunHistory[gunName].push({
+      timestamp: now,
+      flowRate: gun.flowRate,
+      temperature: gun.temperature
+    });
+
+    // Remove old entries
+    gunHistory[gunName] =
+      gunHistory[gunName].filter(p => p.timestamp >= cutoff);
+
+  });
+
+  fs.writeFileSync(HISTORY_FILE, JSON.stringify(gunHistory, null, 2));
+}
 
 // API Configuration
 const API_PORT = 7575;
@@ -22,6 +61,29 @@ try {
 } catch (err) {
   console.error("❌ Failed to read config.json:", err.message || err);
   process.exit(1);
+}
+
+// Gun name mapping
+const GUN_NAME_MAP = {
+  1: "VA110190",
+  2: "VA110187",
+  3: "VA110171",
+  4: "VA110185",
+  5: "VA110186",
+  6: "VA110178",
+  7: "VA110174",
+  8: "VA110170",
+  9: "VA110172",
+  10: "VA110184",
+  11: "VA110183",
+  12: "VA110182",
+  13: "VA110189",
+  14: "VA110192"
+};
+
+// Resolve gun name safely
+function getGunName(index) {
+  return GUN_NAME_MAP[index] || `Gun ${index}`;
 }
 
 const POLL_INTERVAL = 2000;
@@ -99,11 +161,41 @@ async function updateWeldCountDataSafely(newData) {
   try {
     latestWeldCountData = {...newData};
     await saveWeldCountToFileAsync(latestWeldCountData);
+    storeHistoricalData(latestSensorData);
     broadcastWeldCountToClients(latestWeldCountData);
   } finally {
     isWritingWeldData = false;
   }
 }
+
+app.get('/api/history', authenticateAPI, (req, res) => {
+
+  const gunName = req.query.gunName;
+  const range = req.query.range || "24h";
+
+  const rangeMap = {
+    "1h": 3600000,
+    "6h": 21600000,
+    "12h": 43200000,
+    "24h": 86400000,
+    "7d": 604800000,
+    "30d": 2592000000
+  };
+
+  const cutoff = Date.now() - (rangeMap[range] || rangeMap["24h"]);
+
+  const data = (gunHistory[gunName] || []).filter(
+    p => p.timestamp >= cutoff
+  );
+
+  res.json({
+    success: true,
+    gunName,
+    points: data.length,
+    data
+  });
+
+});
 
 // Middleware for API authentication
 function authenticateAPI(req, res, next) {
@@ -357,6 +449,7 @@ async function generateMockPLCData() {
 
       newSensorData.push({
         gunIndex: gunIndex,
+        gunName: getGunName(gunIndex),
         timestamp: getISTTimestamp(),
         flowRate: flowRate,
         temperature: temperature
@@ -404,10 +497,9 @@ async function generateMockWeldCountData() {
   const gunNames = [
     'MB20_Gun1_LH', 'MB20_Gun3_LH', 'MB20_Gun3_RH', 'MB20_Gun2_RH', 'MB20_Gun3_RH_2', 'MB20_Gun4_RH',
     'MB30_Gun1_LH', 'MB30_Gun2_LH', 'MB30_Gun3_LH', 'MB30_Gun1_RH', 'MB30_Gun2_RH', 'MB30_Gun3_RH',
-    'MB40_Gun1_LH', 'MB40_Gun2_LH', 'MB40_Gun3_LH', 'MB40_Gun1_RH', 'MB40_Gun2_RH',
-    'MB50_Gun1_LH', 'MB50_Gun2_LH',
-    'MB60_Gun1_RH', 'MB60_Gun2_RH', 'MB60_Gun3_RH', 'MB60_Gun3_LH', 'MB60_Gun1_LH', 'MB60_Gun2_LH',
-    'I193.6', 'I193.7'
+    'MB40_Gun1_LH', 'MB40_Gun2_LH', 'MB40_Gun3_LH', 'MB40_Gun1_RH', 'MB40_Gun2_RH', 'MB50_Gun1_LH', 
+    'MB50_Gun2_LH', 'MB60_Gun1_RH', 'MB60_Gun2_RH', 'MB60_Gun3_RH', 'MB60_Gun3_LH', 'MB60_Gun1_LH', 
+    'MB60_Gun2_LH', 'I193.6', 'I193.7'
   ];
 
   const counts = {};

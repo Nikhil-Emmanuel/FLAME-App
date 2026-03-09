@@ -304,7 +304,7 @@ class _FlowRateTrendsPageState extends State<FlowRateTrendsPage> {
     );
   }
 
-  Widget _buildEmptyChart(String gun, bool expanded) {
+ /* Widget _buildEmptyChart(String gun, bool expanded) {
     return Card(
       color: Colors.white,
       elevation: expanded ? 12 : 6,
@@ -353,7 +353,7 @@ class _FlowRateTrendsPageState extends State<FlowRateTrendsPage> {
         ),
       ),
     );
-  }
+  }*/
 
   Widget _buildExpandedChart(String gun) {
     return Scaffold(

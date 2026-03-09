@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -33,12 +34,11 @@ List<WeldCountData> _parseWeldCountDataList(String jsonString) {
 }
 
 class ApiService {
-  
   static ApiService? _instance;
   static ApiService get instance => _instance ??= ApiService._();
-  
+
   ApiService._();
-  
+
   WebSocketChannel? _channel;
   StreamController<List<GunData>>? _dataStreamController;
   StreamController<List<AlertData>>? _alertStreamController;
@@ -53,9 +53,12 @@ class ApiService {
   List<WeldCountData> _cachedWeldCounts = [];
 
   // Getters for streams
-  Stream<List<GunData>> get gunDataStream => _dataStreamController?.stream ?? const Stream.empty();
-  Stream<List<AlertData>> get alertStream => _alertStreamController?.stream ?? const Stream.empty();
-  Stream<List<WeldCountData>> get weldCountStream => _weldCountStreamController?.stream ?? const Stream.empty();
+  Stream<List<GunData>> get gunDataStream =>
+      _dataStreamController?.stream ?? const Stream.empty();
+  Stream<List<AlertData>> get alertStream =>
+      _alertStreamController?.stream ?? const Stream.empty();
+  Stream<List<WeldCountData>> get weldCountStream =>
+      _weldCountStreamController?.stream ?? const Stream.empty();
 
   bool get isConnected => _isConnected;
   List<GunData> get cachedGunData => _cachedGunData;
@@ -72,7 +75,8 @@ class ApiService {
 
     _dataStreamController = StreamController<List<GunData>>.broadcast();
     _alertStreamController = StreamController<List<AlertData>>.broadcast();
-    _weldCountStreamController = StreamController<List<WeldCountData>>.broadcast();
+    _weldCountStreamController =
+        StreamController<List<WeldCountData>>.broadcast();
 
     // Load cached data
     await _loadCachedData();
@@ -89,19 +93,60 @@ class ApiService {
 
   // HTTP Headers with API key
   Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'x-api-key': SettingsService.instance.apiKey,
-  };
+        'Content-Type': 'application/json',
+        'x-api-key': SettingsService.instance.apiKey,
+      };
 
   // Check network connectivity
   Future<bool> _hasNetworkConnection() async {
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      return !connectivityResult.contains(ConnectivityResult.none) && connectivityResult.isNotEmpty;
+      return !connectivityResult.contains(ConnectivityResult.none) &&
+          connectivityResult.isNotEmpty;
     } catch (e) {
       return false;
     }
   }
+
+  Future<List<FlSpot>> getFlowHistory(String gunName, String range) async {
+    final url = Uri.parse(
+        '${SettingsService.instance.baseUrl}/api/history?gunName=$gunName&range=$range');
+
+    final response = await http.get(
+      url,
+      headers: _headers,
+    );
+
+    final jsonData = jsonDecode(response.body);
+
+    return (jsonData["data"] as List)
+        .map((e) => FlSpot(
+              (e["timestamp"] as num).toDouble(),
+              (e["flowRate"] as num).toDouble(),
+            ))
+        .toList();
+  }
+
+  Future<List<FlSpot>> getTempHistory(String gunName, String range) async {
+    final url = Uri.parse(
+        '${SettingsService.instance.baseUrl}/api/history?gunName=$gunName&range=$range');
+
+    final response = await http.get(
+      url,
+      headers: _headers,
+    );
+
+    final jsonData = jsonDecode(response.body);
+
+    return (jsonData["data"] as List)
+        .map((e) => FlSpot(
+              (e["timestamp"] as num).toDouble(),
+              (e["temperature"] as num).toDouble(),
+            ))
+        .toList();
+  }
+
+  
 
   // HTTP API calls with error handling
   Future<ApiResponse<List<GunData>>> getAllGuns() async {
@@ -115,10 +160,12 @@ class ApiService {
         );
       }
 
-      final response = await http.get(
-        Uri.parse('${SettingsService.instance.baseUrl}/api/guns'),
-        headers: _headers,
-      ).timeout(SettingsService.instance.httpTimeout);
+      final response = await http
+          .get(
+            Uri.parse('${SettingsService.instance.baseUrl}/api/guns'),
+            headers: _headers,
+          )
+          .timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
         // Parse JSON in isolate to avoid blocking UI
@@ -170,10 +217,12 @@ class ApiService {
         );
       }
 
-      final response = await http.get(
-        Uri.parse('${SettingsService.instance.baseUrl}/api/alerts'),
-        headers: _headers,
-      ).timeout(SettingsService.instance.httpTimeout);
+      final response = await http
+          .get(
+            Uri.parse('${SettingsService.instance.baseUrl}/api/alerts'),
+            headers: _headers,
+          )
+          .timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
         // Parse JSON in isolate to avoid blocking UI
@@ -220,14 +269,17 @@ class ApiService {
         );
       }
 
-      final response = await http.get(
-        Uri.parse('${SettingsService.instance.baseUrl}/api/weld-counts'),
-        headers: _headers,
-      ).timeout(SettingsService.instance.httpTimeout);
+      final response = await http
+          .get(
+            Uri.parse('${SettingsService.instance.baseUrl}/api/weld-counts'),
+            headers: _headers,
+          )
+          .timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
         // Parse JSON in isolate to avoid blocking UI
-        final weldCounts = await compute(_parseWeldCountDataList, response.body);
+        final weldCounts =
+            await compute(_parseWeldCountDataList, response.body);
         final jsonData = json.decode(response.body);
 
         // Cache the weld counts
@@ -273,10 +325,13 @@ class ApiService {
         );
       }
 
-      final response = await http.get(
-        Uri.parse('${SettingsService.instance.baseUrl}/api/weld-counts/$gunIndex'),
-        headers: _headers,
-      ).timeout(SettingsService.instance.httpTimeout);
+      final response = await http
+          .get(
+            Uri.parse(
+                '${SettingsService.instance.baseUrl}/api/weld-counts/$gunIndex'),
+            headers: _headers,
+          )
+          .timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -318,10 +373,12 @@ class ApiService {
         );
       }
 
-      final response = await http.get(
-        Uri.parse('${SettingsService.instance.baseUrl}/api/guns/$gunIndex'),
-        headers: _headers,
-      ).timeout(SettingsService.instance.httpTimeout);
+      final response = await http
+          .get(
+            Uri.parse('${SettingsService.instance.baseUrl}/api/guns/$gunIndex'),
+            headers: _headers,
+          )
+          .timeout(SettingsService.instance.httpTimeout);
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -352,14 +409,16 @@ class ApiService {
   void _connectWebSocket() async {
     try {
       if (!await _hasNetworkConnection()) return;
-      
-      _channel = WebSocketChannel.connect(Uri.parse(SettingsService.instance.wsUrl));
-      
+
+      _channel =
+          WebSocketChannel.connect(Uri.parse(SettingsService.instance.wsUrl));
+
       _channel!.stream.listen(
         (data) async {
           try {
             final jsonData = json.decode(data);
-            if (jsonData['type'] == 'sensor_update' || jsonData['type'] == 'initial_data') {
+            if (jsonData['type'] == 'sensor_update' ||
+                jsonData['type'] == 'initial_data') {
               final List<dynamic> gunList = jsonData['data'] as List<dynamic>;
               final guns = gunList.map((gun) => GunData.fromJson(gun)).toList();
 
@@ -371,19 +430,26 @@ class ApiService {
 
               // Extract alerts from gun data using settings thresholds
               final settings = SettingsService.instance;
-              final alerts = guns.where((gun) => gun.isAlertWithThresholds(
-                settings.highTemperatureThreshold,
-                settings.lowFlowThreshold
-              )).map((gun) =>
-                AlertData(
-                  gunIndex: gun.gunIndex,
-                  timestamp: gun.timestamp,
-                  flowRate: gun.flowRate,
-                  temperature: gun.temperature,
-                  alertType: gun.alertTypeWithThresholds(settings.highTemperatureThreshold, settings.lowFlowThreshold),
-                  severity: gun.severityWithThresholds(settings.criticalTemperatureThreshold, settings.criticalFlowThreshold, settings.highTemperatureThreshold, settings.lowFlowThreshold),
-                )
-              ).toList();
+              final alerts = guns
+                  .where((gun) => gun.isAlertWithThresholds(
+                      settings.highTemperatureThreshold,
+                      settings.lowFlowThreshold))
+                  .map((gun) => AlertData(
+                        gunIndex: gun.gunIndex,
+                        timestamp: gun.timestamp,
+                        flowRate: gun.flowRate,
+                        temperature: gun.temperature,
+                        alertType: gun.alertTypeWithThresholds(
+                            settings.highTemperatureThreshold,
+                            settings.lowFlowThreshold),
+                        severity: gun.severityWithThresholds(
+                            settings.criticalTemperatureThreshold,
+                            settings.criticalFlowThreshold,
+                            settings.highTemperatureThreshold,
+                            settings.lowFlowThreshold),
+                        gunName_: gun.gunName_,
+                      ))
+                  .toList();
 
               _cachedAlerts = alerts;
               _alertStreamController?.add(alerts);
@@ -391,7 +457,8 @@ class ApiService {
               _saveCachedData();
             } else if (jsonData['type'] == 'weld_count_update') {
               final List<dynamic> weldList = jsonData['data'] as List<dynamic>;
-              final weldCounts = weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
+              final weldCounts =
+                  weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
 
               _cachedWeldCounts = weldCounts;
               _weldCountStreamController?.add(weldCounts);
@@ -411,7 +478,7 @@ class ApiService {
           _scheduleReconnect();
         },
       );
-      
+
       print('WebSocket connected successfully');
     } catch (e) {
       print('WebSocket connection failed: $e');
@@ -431,8 +498,11 @@ class ApiService {
   // HTTP polling as fallback
   Future<void> _startPolling() async {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(SettingsService.instance.pollInterval, (timer) async {
-      if (!SettingsService.instance.enableWebSocket || _channel == null || _channel!.closeCode != null) {
+    _pollTimer =
+        Timer.periodic(SettingsService.instance.pollInterval, (timer) async {
+      if (!SettingsService.instance.enableWebSocket ||
+          _channel == null ||
+          _channel!.closeCode != null) {
         // WebSocket not connected or disabled, use HTTP polling
         final gunsResponse = await getAllGuns();
         if (gunsResponse.success && gunsResponse.data != null) {
@@ -463,12 +533,14 @@ class ApiService {
 
       if (cachedAlertsJson != null) {
         final List<dynamic> alertList = json.decode(cachedAlertsJson);
-        _cachedAlerts = alertList.map((alert) => AlertData.fromJson(alert)).toList();
+        _cachedAlerts =
+            alertList.map((alert) => AlertData.fromJson(alert)).toList();
       }
 
       if (cachedWeldCountsJson != null) {
         final List<dynamic> weldList = json.decode(cachedWeldCountsJson);
-        _cachedWeldCounts = weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
+        _cachedWeldCounts =
+            weldList.map((weld) => WeldCountData.fromJson(weld)).toList();
       }
     } catch (e) {
       // Silently handle errors in production
@@ -478,9 +550,12 @@ class ApiService {
   Future<void> _saveCachedData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(ApiConfig.cachedGunsKey, json.encode(_cachedGunData.map((gun) => gun.toJson()).toList()));
-      await prefs.setString(ApiConfig.cachedAlertsKey, json.encode(_cachedAlerts.map((alert) => alert.toJson()).toList()));
-      await prefs.setString('cached_weld_counts', json.encode(_cachedWeldCounts.map((weld) => weld.toJson()).toList()));
+      await prefs.setString(ApiConfig.cachedGunsKey,
+          json.encode(_cachedGunData.map((gun) => gun.toJson()).toList()));
+      await prefs.setString(ApiConfig.cachedAlertsKey,
+          json.encode(_cachedAlerts.map((alert) => alert.toJson()).toList()));
+      await prefs.setString('cached_weld_counts',
+          json.encode(_cachedWeldCounts.map((weld) => weld.toJson()).toList()));
     } catch (e) {
       // Silently handle errors in production
     }

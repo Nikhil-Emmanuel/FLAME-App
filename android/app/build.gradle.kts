@@ -19,7 +19,7 @@ val kotlin_version = "1.9.10"
 
 android {
     namespace = "com.flame.nevark"
-    compileSdk = 35
+    compileSdk = 36
 
     signingConfigs {
         create("release") {
@@ -32,10 +32,10 @@ android {
 
     defaultConfig {
         applicationId = "com.flame.nevark"
-        minSdk = 21
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "2.0.0"
+        versionName = "2.0.1"
     }
 
     compileOptions {

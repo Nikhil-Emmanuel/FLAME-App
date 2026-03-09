@@ -48,9 +48,23 @@ class SettingsService {
   int get serverPort => _prefs?.getInt(_serverPortKey) ?? _defaultServerPort;
   String get apiKey => _prefs?.getString(_apiKeyKey) ?? _defaultApiKey;
   
+  // Check if serverIp is URL format
+  bool get _isUrlFormat => serverIp.contains('://') || serverIp.contains('.com') || serverIp.contains('.net') || serverIp.contains('.io');
+
   // Computed URLs
-  String get baseUrl => 'http://$serverIp:$serverPort';
-  String get wsUrl => 'ws://$serverIp:$serverPort';
+  String get baseUrl {
+    if (_isUrlFormat) {
+      return serverIp.startsWith('http') ? serverIp : 'https://$serverIp';
+    }
+    return 'http://$serverIp:$serverPort';
+  }
+
+  String get wsUrl {
+    if (_isUrlFormat) {
+      return serverIp.startsWith('wss://') ? serverIp : 'wss://${serverIp.replaceAll(RegExp(r'^https?://'), '')}';
+    }
+    return 'ws://$serverIp:$serverPort';
+  }
   
   // Timeout and Interval Settings
   Duration get httpTimeout => Duration(seconds: _prefs?.getInt(_httpTimeoutKey) ?? _defaultHttpTimeout);

@@ -150,9 +150,9 @@ class NotificationService {
   // Get notification title based on alert
   String _getNotificationTitle(AlertData alert) {
     if (alert.severity == 'CRITICAL') {
-      return '🚨 CRITICAL ALERT - Gun ${alert.gunIndex}';
+      return '🚨 CRITICAL ALERT - ${alert.gunName}';
     } else {
-      return '⚠️ Warning - Gun ${alert.gunIndex}';
+      return '⚠️ Warning - ${alert.gunName}';
     }
   }
 

@@ -269,7 +269,7 @@ class _GunInchingPageState extends State<GunInchingPage> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -295,7 +295,7 @@ class _GunInchingPageState extends State<GunInchingPage> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade700.withOpacity(0.5),
+                          color: Colors.blue.shade700.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(

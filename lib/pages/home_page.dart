@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'gun_status_page.dart';
-import 'flow_rate_trends_page.dart';
+import 'performance_trends_page.dart';
 import 'day_min_max_page.dart';
-import 'rate_of_temperature_page.dart';
 import 'emergency_alerts_page.dart';
 import 'gun_inching_page.dart';
 import 'settings_page.dart';
@@ -21,13 +20,13 @@ class _HomePageState extends State<HomePage>
   // Use ValueNotifier for minimal rebuilds
   final ValueNotifier<int> _selectedIndexNotifier = ValueNotifier(-1);
   late AnimationController _animationController;
+  // ignore: unused_field
   late Animation<double> _fadeAnimation;
 
   static const List<String> _menuTitles = [
-    'Live Gun Status',
-    'Flow Rate Trends',
+    'Gun Overview',
+    'Performance Trends',
     'Daily Min/Max',
-    'Temperature Trends',
     'Gun Inching',
     'Emergency Alerts'
   ];
@@ -35,9 +34,8 @@ class _HomePageState extends State<HomePage>
   // Lazy-load pages for better performance
   static const List<Widget> _pages = [
     GunStatusPage(),
-    FlowRateTrendsPage(),
+    PerformanceTrendsPage(),
     DayMinMaxPage(),
-    RateOfTemperaturePage(),
     GunInchingPage(),
     EmergencyAlertsPage()
   ];
@@ -73,14 +71,12 @@ class _HomePageState extends State<HomePage>
       case 0:
         return const Icon(Icons.monitor_heart);
       case 1:
-        return const Icon(Icons.water);
+        return const Icon(Icons.analytics);
       case 2:
         return const Icon(Icons.trending_up);
       case 3:
-        return const Icon(Icons.thermostat);
-      case 4:
         return const Icon(Icons.local_fire_department);
-      case 5:
+      case 4:
         return const Icon(Icons.warning);
       default:
         return const Icon(Icons.dashboard);
@@ -206,93 +202,106 @@ class _WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          GlowImage(
-            assetPath: 'assets/icon/flame.png',
-            size: 100,
-          ),
-          const SizedBox(height: 20),
-          /*RichText(
-            text: const TextSpan(
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GlowImage(
+                assetPath: 'assets/icon/flame.png',
+                size: 100,
               ),
-              children: [
-                TextSpan(text: 'Welcome to '),
-                TextSpan(
-                  text: 'FLAME',
+              const SizedBox(height: 20),
+              /*RichText(
+                text: const TextSpan(
                   style: TextStyle(
-                    color: Colors.red,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
-                ),
-              ],
-            ),
-          )*/
-          const TypewriterWelcomeText(),
-          const SizedBox(height: 8),
-          Text(
-            'Live Data Monitoring Ecosystem',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 35),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            child: AnimatedBorderGlow(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade50, Colors.blue.shade100],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromARGB(218, 33, 149, 243).withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
                   children: [
-                    const Text(
-                      '📊 Real-time Gun Metric Monitoring',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '📈 Daily Min & Max Value Tracking',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '🚨 Custom Live Emergency Alerts',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Select a Menu Option To Get Started',
+                    TextSpan(text: 'Welcome to '),
+                    TextSpan(
+                      text: 'FLAME',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Colors.red,
                       ),
                     ),
                   ],
                 ),
+              )*/
+              const TypewriterWelcomeText(),
+              const SizedBox(height: 8),
+              Text(
+                'Live Data Monitoring Ecosystem',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
-            ),
+              const SizedBox(height: 35),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: AnimatedBorderGlow(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade50, Colors.blue.shade100],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color.fromARGB(218, 33, 149, 243)
+                              .withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '📊 Real-time Gun Metric Monitoring',
+                          style: TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '📈 Daily Min & Max Value Tracking',
+                          style: TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '🚨 Custom Live Emergency Alerts',
+                          style: TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Select a Menu Option To Get Started',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -310,6 +319,7 @@ class _TypewriterWelcomeTextState extends State<TypewriterWelcomeText> {
   String visibleText = "";
   int index = 0;
   bool forward = true;
+  Timer? _typingTimer;
 
   @override
   void initState() {
@@ -318,7 +328,12 @@ class _TypewriterWelcomeTextState extends State<TypewriterWelcomeText> {
   }
 
   void _startTyping() {
-    Timer.periodic(const Duration(milliseconds: 120), (timer) {
+    _typingTimer?.cancel();
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         if (forward) {
           index++;
@@ -328,7 +343,9 @@ class _TypewriterWelcomeTextState extends State<TypewriterWelcomeText> {
             // ✅ Pause before deleting
             timer.cancel();
             Future.delayed(const Duration(seconds: 2), () {
-              _startTyping();
+              if (mounted) {
+                _startTyping();
+              }
             });
           }
         } else {
@@ -339,7 +356,9 @@ class _TypewriterWelcomeTextState extends State<TypewriterWelcomeText> {
             // ✅ Pause before typing again
             timer.cancel();
             Future.delayed(const Duration(seconds: 1), () {
-              _startTyping();
+              if (mounted) {
+                _startTyping();
+              }
             });
           }
         }
@@ -347,6 +366,12 @@ class _TypewriterWelcomeTextState extends State<TypewriterWelcomeText> {
         visibleText = fullText.substring(0, index);
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _typingTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -424,7 +449,7 @@ class _AnimatedBorderGlowState extends State<AnimatedBorderGlow>
               transform: GradientRotation(_controller.value * 6.28),
               colors: [
                 Colors.transparent,
-                Colors.blueAccent.withOpacity(0.8),
+                Colors.blueAccent.withValues(alpha: 0.8),
                 Colors.transparent,
               ],
             ),
@@ -478,7 +503,7 @@ class _GlowImageState extends State<GlowImage>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(0.3 * _controller.value),
+                color: Colors.red.withValues(alpha: 0.3 * _controller.value),
                 blurRadius: 40 * _controller.value,
                 spreadRadius: 4 * _controller.value,
               ),

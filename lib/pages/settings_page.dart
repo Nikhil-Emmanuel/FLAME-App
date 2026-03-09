@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import '../services/settings_service.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../utils/credential_manager.dart';
+import 'login_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -31,9 +33,10 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _enableNotifications = true;
   bool _enableWebSocket = true;
   bool _enableOfflineMode = true;
-  
+
   bool _isLoading = false;
   bool _hasUnsavedChanges = false;
+  bool _isUrlFormat = false;
 
   @override
   void initState() {
@@ -67,10 +70,22 @@ class _SettingsPageState extends State<SettingsPage> {
     _criticalFlowThresholdController.addListener(_onFieldChanged);
   }
 
+  bool _isUrl(String value) {
+    return value.contains('.') && (value.contains('://') || value.contains('.com') || value.contains('.net') || value.contains('.io'));
+  }
+
   void _onFieldChanged() {
     if (!_hasUnsavedChanges) {
       setState(() {
         _hasUnsavedChanges = true;
+      });
+    }
+
+    // Check if server IP is URL format
+    final isUrl = _isUrl(_serverIpController.text);
+    if (isUrl != _isUrlFormat) {
+      setState(() {
+        _isUrlFormat = isUrl;
       });
     }
   }
@@ -78,7 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _loadCurrentSettings() {
     _serverIpController.text = _settingsService.serverIp;
     _serverPortController.text = _settingsService.serverPort.toString();
-    _apiKeyController.text = _settingsService.apiKey;
+    _apiKeyController.text = '';
     _httpTimeoutController.text = _settingsService.httpTimeout.inSeconds.toString();
     _reconnectIntervalController.text = _settingsService.reconnectInterval.inSeconds.toString();
     _pollIntervalController.text = _settingsService.pollInterval.inSeconds.toString();
@@ -86,11 +101,12 @@ class _SettingsPageState extends State<SettingsPage> {
     _lowFlowThresholdController.text = _settingsService.lowFlowThreshold.toString();
     _criticalTempThresholdController.text = _settingsService.criticalTemperatureThreshold.toString();
     _criticalFlowThresholdController.text = _settingsService.criticalFlowThreshold.toString();
-    
+
     setState(() {
       _enableNotifications = _settingsService.enableNotifications;
       _enableWebSocket = _settingsService.enableWebSocket;
       _enableOfflineMode = _settingsService.enableOfflineMode;
+      _isUrlFormat = _isUrl(_settingsService.serverIp);
     });
   }
 
@@ -271,16 +287,13 @@ class _SettingsPageState extends State<SettingsPage> {
             TextFormField(
               controller: _serverIpController,
               decoration: const InputDecoration(
-                labelText: 'Server IP Address',
-                hintText: '192.168.1.100',
+                labelText: 'Server IP/URL',
+                hintText: '192.168.1.100 or example.com',
                 prefixIcon: Icon(Icons.computer),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter server IP address';
-                }
-                if (!SettingsService.isValidIpAddress(value.trim())) {
-                  return 'Please enter a valid IP address';
+                  return 'Please enter server IP or URL';
                 }
                 return null;
               },
@@ -293,6 +306,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 hintText: '7575',
                 prefixIcon: Icon(Icons.settings_ethernet),
               ),
+              enabled: !_isUrlFormat,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (value) {
@@ -311,7 +325,6 @@ class _SettingsPageState extends State<SettingsPage> {
               controller: _apiKeyController,
               decoration: const InputDecoration(
                 labelText: 'API Key',
-                hintText: 'FlameApp123\$byNevark',
                 prefixIcon: Icon(Icons.key),
               ),
               obscureText: true,
@@ -570,6 +583,71 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _logout() async {
+    final navigator = Navigator.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout? Saved credentials will be cleared.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await CredentialManager.instance.logout();
+      if (!mounted) {
+        return;
+      }
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
+  Future<void> _resetCredentials() async {
+    final navigator = Navigator.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Credentials'),
+        content: const Text('This will delete all stored credentials. You will need to create a new account. Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await CredentialManager.instance.resetAllCredentials();
+      if (!mounted) {
+        return;
+      }
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
   Widget _buildActionButtons() {
     return Column(
       children: [
@@ -602,6 +680,34 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: _isLoading ? null : _resetToDefaults,
                 icon: const Icon(Icons.restore),
                 label: const Text('Reset'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout),
+                label: const Text('Logout'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _resetCredentials,
+                icon: const Icon(Icons.delete_forever),
+                label: const Text('Reset Credentials'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red.shade700,
+                ),
               ),
             ),
           ],

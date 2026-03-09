@@ -18,6 +18,9 @@ dependencies:
   connectivity_plus: ^7.0.0
   flutter_local_notifications: ^17.0.0
   google_fonts: ^6.2.1
+  flutter_secure_storage: ^10.0.0
+  crypto: ^3.0.7
+  
 
 
 dev_dependencies:

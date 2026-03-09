@@ -1,122 +1,212 @@
 [
   {
     "gunIndex": 1,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 10,
-    "temperature": 38.8
+    "gunName": "VA110190",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 10.7,
+    "temperature": 38.9
   },
   {
     "gunIndex": 2,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 8.8,
-    "temperature": 36.6
+    "gunName": "VA110187",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 10.3,
+    "temperature": 43.9
   },
   {
     "gunIndex": 3,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 9,
-    "temperature": 41.2
+    "gunName": "VA110171",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 7.3,
+    "temperature": 42.6
   },
   {
     "gunIndex": 4,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 5.9,
-    "temperature": 44
+    "gunName": "VA110185",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 11.6,
+    "temperature": 41
   },
   {
     "gunIndex": 5,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 7,
-    "temperature": 44.1
+    "gunName": "VA110186",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 7.9,
+    "temperature": 40
   },
   {
     "gunIndex": 6,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 8.9,
-    "temperature": 41.5
+    "gunName": "VA110178",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 11.8,
+    "temperature": 39.9
   },
   {
     "gunIndex": 7,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 5.2,
-    "temperature": 36
+    "gunName": "VA110174",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 11,
+    "temperature": 44.4
   },
   {
     "gunIndex": 8,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 9.7,
-    "temperature": 39.1
+    "gunName": "VA110170",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 4.5,
+    "temperature": 50.5
   },
   {
     "gunIndex": 9,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 5.6,
-    "temperature": 44.7
+    "gunName": "VA110172",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 6.6,
+    "temperature": 35.6
   },
   {
     "gunIndex": 10,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 9.4,
-    "temperature": 39.8
+    "gunName": "VA110184",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 7.6,
+    "temperature": 43.7
   },
   {
     "gunIndex": 11,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 11.4,
-    "temperature": 43.3
+    "gunName": "VA110183",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.6,
+    "temperature": 35.1
   },
   {
     "gunIndex": 12,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 6.3,
-    "temperature": 39.3
+    "gunName": "VA110182",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 9.2,
+    "temperature": 43.3
   },
   {
     "gunIndex": 13,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 7.4,
-    "temperature": 38.5
+    "gunName": "VA110189",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.7,
+    "temperature": 41.1
   },
   {
     "gunIndex": 14,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 10.6,
-    "temperature": 36
+    "gunName": "VA110192",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.3,
+    "temperature": 38.6
   },
   {
     "gunIndex": 15,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 10.8,
-    "temperature": 36.5
+    "gunName": "Gun 15",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 7,
+    "temperature": 41.9
   },
   {
     "gunIndex": 16,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 8.6,
-    "temperature": 36.3
+    "gunName": "Gun 16",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.8,
+    "temperature": 41.9
   },
   {
     "gunIndex": 17,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 5.5,
-    "temperature": 38.8
+    "gunName": "Gun 17",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 11.6,
+    "temperature": 52.8
   },
   {
     "gunIndex": 18,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 10.2,
-    "temperature": 36.3
+    "gunName": "Gun 18",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.4,
+    "temperature": 38.6
   },
   {
     "gunIndex": 19,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 8.2,
-    "temperature": 44
+    "gunName": "Gun 19",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 8.5,
+    "temperature": 39.5
   },
   {
     "gunIndex": 20,
-    "timestamp": "2026-02-18 22:36:16 +05:30",
-    "flowRate": 10.2,
-    "temperature": 42.3
+    "gunName": "Gun 20",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 8.5,
+    "temperature": 36.8
+  },
+  {
+    "gunIndex": 21,
+    "gunName": "Gun 21",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 6.7,
+    "temperature": 50.5
+  },
+  {
+    "gunIndex": 22,
+    "gunName": "Gun 22",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 11.9,
+    "temperature": 41.8
+  },
+  {
+    "gunIndex": 23,
+    "gunName": "Gun 23",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 6.8,
+    "temperature": 37.9
+  },
+  {
+    "gunIndex": 24,
+    "gunName": "Gun 24",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 8.9,
+    "temperature": 44.1
+  },
+  {
+    "gunIndex": 25,
+    "gunName": "Gun 25",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 6.8,
+    "temperature": 52.1
+  },
+  {
+    "gunIndex": 26,
+    "gunName": "Gun 26",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 7.6,
+    "temperature": 53.7
+  },
+  {
+    "gunIndex": 27,
+    "gunName": "Gun 27",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 11.9,
+    "temperature": 46.2
+  },
+  {
+    "gunIndex": 28,
+    "gunName": "Gun 28",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.6,
+    "temperature": 39.1
+  },
+  {
+    "gunIndex": 29,
+    "gunName": "Gun 29",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 5.9,
+    "temperature": 35.3
+  },
+  {
+    "gunIndex": 30,
+    "gunName": "Gun 30",
+    "timestamp": "2026-03-09 22:47:35 +05:30",
+    "flowRate": 8.4,
+    "temperature": 52
   }
 ]
