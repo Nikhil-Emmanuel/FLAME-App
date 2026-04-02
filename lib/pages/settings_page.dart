@@ -93,7 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _loadCurrentSettings() {
     _serverIpController.text = _settingsService.serverIp;
     _serverPortController.text = _settingsService.serverPort.toString();
-    _apiKeyController.text = '';
+      _apiKeyController.text = _settingsService.apiKey;
     _httpTimeoutController.text = _settingsService.httpTimeout.inSeconds.toString();
     _reconnectIntervalController.text = _settingsService.reconnectInterval.inSeconds.toString();
     _pollIntervalController.text = _settingsService.pollInterval.inSeconds.toString();
