@@ -81,6 +81,7 @@ class _PerformanceTrendsPageState extends State<PerformanceTrendsPage> {
   Timer? _refreshTimer;
   Timer? _uiUpdateTimer;
   bool _needsUIUpdate = false;
+  bool _retriedHistoryLoadFromLive = false;
 
   @override
   void initState() {
@@ -116,41 +117,73 @@ class _PerformanceTrendsPageState extends State<PerformanceTrendsPage> {
     });
   }
 
+  bool _hasAnyHistoryData() {
+    return _fullFlowData.values.any((spots) => spots.isNotEmpty) ||
+        _fullTempData.values.any((spots) => spots.isNotEmpty);
+  }
+
   Future<void> _loadHistoricalDataFromServer() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
-      final guns = ApiService.instance.cachedGunData;
+      final gunsResponse = await ApiService.instance.getAllGuns();
+      final guns = gunsResponse.data ?? ApiService.instance.cachedGunData;
 
-      _fullFlowData.clear();
-      _fullTempData.clear();
+      if (guns.isEmpty) {
+        debugPrint('History load skipped: no guns available yet');
+        return;
+      }
+
+      final nextFlowData = <String, List<FlSpot>>{};
+      final nextTempData = <String, List<FlSpot>>{};
 
       for (var gun in guns) {
         final gunName = gun.gunName;
 
-        final flowFuture = ApiService.instance.getFlowHistory(
-          gunName,
-          _selectedTimeRange.label,
-        );
+        try {
+          final flowFuture = ApiService.instance.getFlowHistory(
+            gunName,
+            _selectedTimeRange.label,
+          );
 
-        final tempFuture = ApiService.instance.getTempHistory(
-          gunName,
-          _selectedTimeRange.label,
-        );
+          final tempFuture = ApiService.instance.getTempHistory(
+            gunName,
+            _selectedTimeRange.label,
+          );
 
-        final results = await Future.wait([flowFuture, tempFuture]);
+          final results = await Future.wait([flowFuture, tempFuture]);
 
-        _fullFlowData[gunName] = results[0];
-        _fullTempData[gunName] = results[1];
+          nextFlowData[gunName] = _sortAndDeduplicateSpots(results[0]);
+          nextTempData[gunName] = _sortAndDeduplicateSpots(results[1]);
+        } catch (e) {
+          debugPrint('History load failed for $gunName: $e');
+
+          if (_fullFlowData.containsKey(gunName)) {
+            nextFlowData[gunName] = List<FlSpot>.from(_fullFlowData[gunName]!);
+          }
+          if (_fullTempData.containsKey(gunName)) {
+            nextTempData[gunName] = List<FlSpot>.from(_fullTempData[gunName]!);
+          }
+        }
 
         if (!_gunColors.containsKey(gunName)) {
           _gunColors[gunName] = _generateDistinctColor();
         }
       }
 
-      _downsampleData();
+      if (nextFlowData.isNotEmpty || nextTempData.isNotEmpty) {
+        _fullFlowData
+          ..clear()
+          ..addAll(nextFlowData);
+        _fullTempData
+          ..clear()
+          ..addAll(nextTempData);
+        _downsampleData();
+      }
     } catch (e) {
       debugPrint("History API error: $e");
     }
@@ -332,6 +365,8 @@ class _PerformanceTrendsPageState extends State<PerformanceTrendsPage> {
       (data) {
         if (!mounted) return;
 
+        final hadHistoryBeforeUpdate = _hasAnyHistoryData();
+
         final now = DateTime.now();
         final timeValue = now.millisecondsSinceEpoch.toDouble();
         final rangeStartTime = now.subtract(_selectedTimeRange.duration);
@@ -379,6 +414,13 @@ class _PerformanceTrendsPageState extends State<PerformanceTrendsPage> {
 
         // Mark that UI needs update (will be processed by timer)
         _needsUIUpdate = true;
+
+        if (!hadHistoryBeforeUpdate &&
+            data.isNotEmpty &&
+            !_retriedHistoryLoadFromLive) {
+          _retriedHistoryLoadFromLive = true;
+          unawaited(_loadHistoricalDataFromServer());
+        }
       },
       onError: (error) {
         debugPrint("Performance trends stream error: $error");

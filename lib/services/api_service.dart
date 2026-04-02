@@ -108,14 +108,26 @@ class ApiService {
     }
   }
 
+  Uri _buildHistoryUri(String gunName, String range) {
+    return Uri.parse('${SettingsService.instance.baseUrl}/api/history').replace(
+      queryParameters: {
+        'gunName': gunName,
+        'range': range.toLowerCase(),
+      },
+    );
+  }
+
   Future<List<FlSpot>> getFlowHistory(String gunName, String range) async {
-    final url = Uri.parse(
-        '${SettingsService.instance.baseUrl}/api/history?gunName=$gunName&range=$range');
+    final url = _buildHistoryUri(gunName, range);
 
     final response = await http.get(
       url,
       headers: _headers,
     );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load flow history: ${response.statusCode}');
+    }
 
     final jsonData = jsonDecode(response.body);
 
@@ -128,13 +140,16 @@ class ApiService {
   }
 
   Future<List<FlSpot>> getTempHistory(String gunName, String range) async {
-    final url = Uri.parse(
-        '${SettingsService.instance.baseUrl}/api/history?gunName=$gunName&range=$range');
+    final url = _buildHistoryUri(gunName, range);
 
     final response = await http.get(
       url,
       headers: _headers,
     );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load temperature history: ${response.statusCode}');
+    }
 
     final jsonData = jsonDecode(response.body);
 
